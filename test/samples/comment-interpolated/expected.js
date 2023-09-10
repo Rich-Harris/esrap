@@ -1,1 +1,1 @@
-a = /* the answer */ 42
+a = /* the answer */ 42;
