@@ -308,29 +308,33 @@ const deconflict = (name, names) => {
 const handle_body = (nodes, state) => {
 	const chunks = [];
 
-	const body = nodes.map((statement) => {
-		const chunks = handle(statement, {
-			...state,
-			indent: state.indent
+	const body = nodes
+		.filter((statement) => statement.type !== 'EmptyStatement')
+		.map((statement) => {
+			const chunks = handle(statement, {
+				...state,
+				indent: state.indent
+			});
+
+			let add_newline = false;
+
+			while (state.comments.length) {
+				const comment = state.comments.shift();
+				const prefix = add_newline ? `\n${state.indent}` : ` `;
+
+				chunks.push(
+					c(
+						comment.type === 'Block'
+							? `${prefix}/*${comment.value}*/`
+							: `${prefix}//${comment.value}`
+					)
+				);
+
+				add_newline = comment.type === 'Line';
+			}
+
+			return chunks;
 		});
-
-		let add_newline = false;
-
-		while (state.comments.length) {
-			const comment = state.comments.shift();
-			const prefix = add_newline ? `\n${state.indent}` : ` `;
-
-			chunks.push(
-				c(
-					comment.type === 'Block' ? `${prefix}/*${comment.value}*/` : `${prefix}//${comment.value}`
-				)
-			);
-
-			add_newline = comment.type === 'Line';
-		}
-
-		return chunks;
-	});
 
 	let needed_padding = false;
 
