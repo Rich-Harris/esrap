@@ -1,0 +1,30 @@
+{
+  "name": "esrap",
+  "version": "0.0.1",
+  "type": "module",
+  "files": [
+    "src",
+    "types"
+  ],
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "types": "./types/index.d.ts",
+  "devDependencies": {
+    "acorn": "^8.10.0",
+    "dts-buddy": "^0.2.4",
+    "prettier": "^3.0.3"
+  },
+  "scripts": {
+    "prepublishOnly": "bun test && dts-buddy"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@jridgewell/sourcemap-codec": "^1.4.15",
+    "@types/estree": "^1.0.1",
+    "periscopic": "^4.0.2"
+  }
+}

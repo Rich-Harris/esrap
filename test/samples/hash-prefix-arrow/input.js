@@ -1,0 +1,1 @@
+export default ({ b }) => b`const foo = #bar => #bar * 2`;
