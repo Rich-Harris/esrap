@@ -1,4 +1,3 @@
-export default ({ b }) => b`
 x: for (let i = 0; i < 10; i += 1) {
 	if (should_break) {
 		break;
@@ -16,4 +15,3 @@ x: for (let i = 0; i < 10; i += 1) {
 		continue x;
 	}
 }
-`;

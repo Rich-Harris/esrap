@@ -1,15 +1,8 @@
-export default ({ x }) => {
-	const bar = x`#bar`;
+function foo(bar$1) {
+	const bar = 'x';
+	bar$1 += 1;
 
-	return x`
-		function foo(#bar) {
-			const bar = 'x';
-
-			${bar} += 1;
-
-			return (#bar) => {
-				console.log(${bar});
-			};
-		}
-	`;
-};
+	return bar => {
+		console.log(bar);
+	};
+}

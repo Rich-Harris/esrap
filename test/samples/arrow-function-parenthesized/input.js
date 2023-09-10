@@ -1,1 +1,1 @@
-export default ({ b, x }) => b`foo || ${x`bar => bar`}`;
+foo || (bar => bar);

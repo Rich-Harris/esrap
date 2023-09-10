@@ -1,11 +1,11 @@
-export default ({ b }) => b`obj = {
+obj = {
 	foo() {
 		console.log('foo');
 	},
 	async bar() {
 		console.log('bar');
 	},
-	baz: function* () {
+	*baz() {
 		console.log('baz');
 	}
-}`;
+};

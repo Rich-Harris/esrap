@@ -1,4 +1,3 @@
-export default ({ b }) => b`
 try {
 	foo();
 } catch {
@@ -12,4 +11,3 @@ try {
 } finally {
 	baz();
 }
-`;

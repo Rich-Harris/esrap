@@ -9,8 +9,7 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 	if (dir[0] === '.') continue;
 
 	test(dir, async () => {
-		// TODO use input.js
-		const input = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
+		const input = await Bun.file(`${__dirname}/samples/${dir}/input.js`).text();
 		const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
 
 		const comments = [];

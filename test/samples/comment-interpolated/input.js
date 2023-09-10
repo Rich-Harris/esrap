@@ -1,1 +1,1 @@
-export default ({ x }) => x`a = /* ${"the answer"} */ ${42}`
+a = /* the answer */ 42;

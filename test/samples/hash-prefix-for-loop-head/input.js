@@ -1,8 +1,3 @@
-export default ({ x, b }) => {
-	const i = x`i`;
-
-	return b`
-		for (let #i = 0; #i < 10; #i += 1) {
-			console.log(${i} * #i);
-		}`;
-};
+for (let i$1 = 0; i$1 < 10; i$1 += 1) {
+	console.log(i * i$1);
+}

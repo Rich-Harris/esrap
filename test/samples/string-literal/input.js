@@ -1,17 +1,11 @@
-export default ({ b }) => {
-	const value = 'foo';
-	const multiline = `
+let a = 'foo';
+let b = "foo";
+let c = `foo`;
+let d = '\n\t\ta\n\t\tb\n\t\tc\n\t';
+let e = "\n\t\ta\n\t\tb\n\t\tc\n\t";
+
+let f = `
 		a
 		b
 		c
 	`;
-	
-	return b`
-		let a = '${value}';
-		let b = "${value}";
-		let c = \`${value}\`;
-		let d = '${multiline}';
-		let e = "${multiline}";
-		let f = \`${multiline}\`;
-	`;
-};

@@ -1,1 +1,1 @@
-export default ({ b }) => b`import a, { b, c as d } from 'x';`;
+import a, { b, c as d } from 'x';

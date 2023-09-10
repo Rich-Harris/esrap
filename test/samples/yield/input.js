@@ -1,4 +1,3 @@
-export default ({ b }) => b`
 function* foo() {
 	yield;
 }
@@ -6,4 +5,3 @@ function* foo() {
 function* bar() {
 	yield* 1;
 }
-`;

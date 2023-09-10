@@ -1,4 +1,1 @@
-export default ({ x }) => ({
-	type: 'ParenthesizedExpression',
-	expression: x`a + b`
-});
+a + b;

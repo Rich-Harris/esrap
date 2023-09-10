@@ -1,7 +1,5 @@
-export default ({ b }) => b`
 class Foo {
-	hi
+	hi;
 	static foo = 1;
-	[KEY] = 2
+	[KEY] = 2;
 }
-`;
