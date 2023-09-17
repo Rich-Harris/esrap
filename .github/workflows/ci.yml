@@ -13,16 +13,7 @@ concurrency:
 
 jobs:
   Tests:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - node-version: 16
-            os: [ubuntu-latest]
-          - node-version: 16
-            os: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - run: git config --global core.autocrlf false
       - uses: actions/checkout@v3
