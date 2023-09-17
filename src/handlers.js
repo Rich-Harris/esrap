@@ -140,7 +140,7 @@ const OPERATOR_PRECEDENCE = {
 	'**': 13
 };
 
-/** @type {Record<string, number>} */
+/** @type {Record<import('estree').Expression['type'] | 'Super' | 'RestElement', number>} */
 const EXPRESSIONS_PRECEDENCE = {
 	ArrayExpression: 20,
 	TaggedTemplateExpression: 20,
