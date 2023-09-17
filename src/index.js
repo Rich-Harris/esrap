@@ -12,8 +12,6 @@ if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
 	btoa = (str) => Buffer.from(str, 'utf-8').toString('base64');
 }
 
-/** @typedef {import('estree').Node} Node */
-
 /**
  * @typedef {{
  *   sourceMapSource?: string;
@@ -23,7 +21,7 @@ if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
  */
 
 /**
- * @param {Node} node
+ * @param {import('estree').Node} node
  * @param {PrintOptions} opts
  * @returns {{ code: string, map: any }} // TODO
  */
