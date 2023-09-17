@@ -1,7 +1,6 @@
 // heavily based on https://github.com/davidbonnet/astring
 // released under MIT license https://github.com/davidbonnet/astring/blob/master/LICENSE
 
-import { re } from './utils.js';
 import { push_array } from './utils.js';
 
 /** @typedef {import('estree').ArrowFunctionExpression} ArrowFunctionExpression */
@@ -27,6 +26,19 @@ import { push_array } from './utils.js';
 /** @typedef {import('estree').VariableDeclaration} VariableDeclaration */
 /** @typedef {import('estree').StaticBlock} StaticBlock */
 /** @typedef {import('estree').PrivateIdentifier} PrivateIdenifier*/
+
+/**
+ * Does `array.push` for all `items`. Needed because `array.push(...items)` throws
+ * "Maximum call stack size exceeded" when `items` is too big of an array.
+ *
+ * @param {any[]} array
+ * @param {any[]} items
+ */
+function push_array(array, items) {
+	for (let i = 0; i < items.length; i++) {
+		array.push(items[i]);
+	}
+}
 
 /**
  * @typedef {{
@@ -1292,14 +1304,7 @@ const handlers = {
 			return [
 				// TODO do we need to handle weird unicode characters somehow?
 				// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
-				c(
-					(node.raw || JSON.stringify(node.value)).replace(re, (_m, _i, at, hash, name) => {
-						if (at) return '@' + name;
-						if (hash) return '#' + name;
-						throw new Error(`this shouldn't happen`);
-					}),
-					node
-				)
+				c(node.raw || JSON.stringify(node.value), node)
 			];
 		}
 
