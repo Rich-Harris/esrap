@@ -1132,6 +1132,7 @@ const handlers = {
 			!node.computed &&
 			node.value.type === 'AssignmentPattern' &&
 			node.value.left.type === 'Identifier' &&
+			node.key.type === 'Identifier' &&
 			node.value.left.name === node.key.name
 		) {
 			return value;
