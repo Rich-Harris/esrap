@@ -106,7 +106,10 @@ const EXPRESSIONS_PRECEDENCE = {
 	Super: 20,
 	SequenceExpression: 20,
 	MemberExpression: 19,
+	MetaProperty: 19,
 	CallExpression: 19,
+	ChainExpression: 19,
+	ImportExpression: 19,
 	NewExpression: 19,
 	AwaitExpression: 17,
 	ClassExpression: 17,
@@ -363,18 +366,6 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').AssignmentExpression | import('estree').AssignmentPattern} node
-	 * @param {import('./types').State} state
-	 */
-	'AssignmentExpression|AssignmentPattern': (node, state) => {
-		return [
-			...handle(node.left, state),
-			c(` ${node.operator || '='} `),
-			...handle(node.right, state)
-		];
-	},
-
-	/**
 	 * @param {import('estree').BinaryExpression | import('estree').LogicalExpression} node
 	 * @param {import('./types').State} state
 	 */
@@ -558,9 +549,13 @@ const handlers = {
 		return chunks;
 	},
 
-	AssignmentExpression: shared['AssignmentExpression|AssignmentPattern'],
+	AssignmentExpression(node, state) {
+		return [...handle(node.left, state), c(` ${node.operator} `), ...handle(node.right, state)];
+	},
 
-	AssignmentPattern: shared['AssignmentExpression|AssignmentPattern'],
+	AssignmentPattern(node, state) {
+		return [...handle(node.left, state), c(` = `), ...handle(node.right, state)];
+	},
 
 	AwaitExpression(node, state) {
 		if (node.argument) {
@@ -865,16 +860,18 @@ const handlers = {
 
 			if (i < length) {
 				// we have named specifiers
-				const specifiers = node.specifiers.slice(i).map((specifier) => {
-					const name = handle(specifier.imported, state)[0];
-					const as = handle(specifier.local, state)[0];
+				const specifiers = /** @type {import('estree').ImportSpecifier[]} */ (node.specifiers)
+					.slice(i)
+					.map((specifier) => {
+						const name = handle(specifier.imported, state)[0];
+						const as = handle(specifier.local, state)[0];
 
-					if (name.content === as.content) {
-						return [as];
-					}
+						if (name.content === as.content) {
+							return [as];
+						}
 
-					return [name, c(' as '), as];
-				});
+						return [name, c(' as '), as];
+					});
 
 				const width =
 					get_length(chunks) +
