@@ -1,30 +1,6 @@
 // heavily based on https://github.com/davidbonnet/astring
 // released under MIT license https://github.com/davidbonnet/astring/blob/master/LICENSE
 
-/** @typedef {import('estree').ArrowFunctionExpression} ArrowFunctionExpression */
-/** @typedef {import('estree').BinaryExpression} BinaryExpression */
-/** @typedef {import('estree').CallExpression} CallExpression */
-/** @typedef {import('estree').Comment} Comment */
-/** @typedef {import('estree').ExportSpecifier} ExportSpecifier */
-/** @typedef {import('estree').Expression} Expression */
-/** @typedef {import('estree').FunctionDeclaration} FunctionDeclaration */
-/** @typedef {import('estree').ImportDeclaration} ImportDeclaration */
-/** @typedef {import('estree').ImportSpecifier} ImportSpecifier */
-/** @typedef {import('estree').Literal} Literal */
-/** @typedef {import('estree').LogicalExpression} LogicalExpression */
-/** @typedef {import('estree').NewExpression} NewExpression */
-/** @typedef {import('estree').Node} Node */
-/** @typedef {import('estree').ObjectExpression} ObjectExpression */
-/** @typedef {import('estree').Pattern} Pattern */
-/** @typedef {import('estree').Property} Property */
-/** @typedef {import('estree').PropertyDefinition} PropertyDefinition */
-/** @typedef {import('estree').SequenceExpression} SequenceExpression */
-/** @typedef {import('estree').SimpleCallExpression} SimpleCallExpression */
-/** @typedef {import('estree').SwitchStatement} SwitchStatement */
-/** @typedef {import('estree').VariableDeclaration} VariableDeclaration */
-/** @typedef {import('estree').StaticBlock} StaticBlock */
-/** @typedef {import('estree').PrivateIdentifier} PrivateIdenifier*/
-
 /**
  * Does `array.push` for all `items`. Needed because `array.push(...items)` throws
  * "Maximum call stack size exceeded" when `items` is too big of an array.
@@ -39,31 +15,9 @@ function push_array(array, items) {
 }
 
 /**
- * @typedef {{
- *   content: string;
- *   loc: null | {
- *     start: { line: number; column: number; };
- *     end: { line: number; column: number; };
- *   };
- *   has_newline: boolean;
- * }} Chunk
- */
-
-/**
- * @typedef {(node: any, state: State) => Chunk[]} Handler
- */
-
-/**
- * @typedef {{
- *   indent: string;
- *   comments: Comment[];
- * }} State
- */
-
-/**
- * @param {Node} node
- * @param {State} state
- * @returns {Chunk[]}
+ * @param {import('estree').Node} node
+ * @param {import('./types').State} state
+ * @returns {import('./types').Chunk[]}
  */
 export function handle(node, state) {
 	const handler = handlers[node.type];
@@ -101,8 +55,8 @@ export function handle(node, state) {
 
 /**
  * @param {string} content
- * @param {Node} [node]
- * @returns {Chunk}
+ * @param {import('estree').Node} [node]
+ * @returns {import('./types').Chunk}
  */
 function c(content, node) {
 	return {
@@ -170,8 +124,8 @@ const EXPRESSIONS_PRECEDENCE = {
 
 /**
  *
- * @param {Expression} node
- * @param {BinaryExpression | LogicalExpression} parent
+ * @param {import('estree').Expression} node
+ * @param {import('estree').BinaryExpression | import('estree').LogicalExpression} parent
  * @param {boolean} is_right
  * @returns
  */
@@ -203,7 +157,10 @@ function needs_parens(node, parent, is_right) {
 		return false;
 	}
 
-	if (/** @type {BinaryExpression} */ (node).operator === '**' && parent.operator === '**') {
+	if (
+		/** @type {import('estree').BinaryExpression} */ (node).operator === '**' &&
+		parent.operator === '**'
+	) {
 		// Exponentiation operator has right-to-left associativity
 		return !is_right;
 	}
@@ -211,18 +168,18 @@ function needs_parens(node, parent, is_right) {
 	if (is_right) {
 		// Parenthesis are used if both operators have the same precedence
 		return (
-			OPERATOR_PRECEDENCE[/** @type {BinaryExpression} */ (node).operator] <=
+			OPERATOR_PRECEDENCE[/** @type {import('estree').BinaryExpression} */ (node).operator] <=
 			OPERATOR_PRECEDENCE[parent.operator]
 		);
 	}
 
 	return (
-		OPERATOR_PRECEDENCE[/** @type {BinaryExpression} */ (node).operator] <
+		OPERATOR_PRECEDENCE[/** @type {import('estree').BinaryExpression} */ (node).operator] <
 		OPERATOR_PRECEDENCE[parent.operator]
 	);
 }
 
-/** @param {Node} node */
+/** @param {import('estree').Node} node */
 function has_call_expression(node) {
 	while (node) {
 		if (node.type[0] === 'CallExpression') {
@@ -235,7 +192,7 @@ function has_call_expression(node) {
 	}
 }
 
-/** @param {Chunk[]} chunks */
+/** @param {import('./types').Chunk[]} chunks */
 const has_newline = (chunks) => {
 	for (let i = 0; i < chunks.length; i += 1) {
 		if (chunks[i].has_newline) return true;
@@ -243,7 +200,7 @@ const has_newline = (chunks) => {
 	return false;
 };
 
-/** @param {Chunk[]} chunks */
+/** @param {import('./types').Chunk[]} chunks */
 const get_length = (chunks) => {
 	let total = 0;
 	for (let i = 0; i < chunks.length; i += 1) {
@@ -259,9 +216,9 @@ const get_length = (chunks) => {
 const sum = (a, b) => a + b;
 
 /**
- * @param {Chunk[][]} nodes
- * @param {Chunk} separator
- * @returns {Chunk[]}
+ * @param {import('./types').Chunk[][]} nodes
+ * @param {import('./types').Chunk} separator
+ * @returns {import('./types').Chunk[]}
  */
 const join = (nodes, separator) => {
 	if (nodes.length === 0) return [];
@@ -275,8 +232,8 @@ const join = (nodes, separator) => {
 };
 
 /**
- * @param {Node[]} nodes
- * @param {State} state
+ * @param {import('estree').Node[]} nodes
+ * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
 	const chunks = [];
@@ -292,7 +249,7 @@ const handle_body = (nodes, state) => {
 			let add_newline = false;
 
 			while (state.comments.length) {
-				const comment = /** @type {Comment} */ (state.comments.shift());
+				const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
 				const prefix = add_newline ? `\n${state.indent}` : ` `;
 
 				chunks.push(
@@ -327,8 +284,8 @@ const handle_body = (nodes, state) => {
 };
 
 /**
- * @param {VariableDeclaration} node
- * @param {State} state
+ * @param {import('estree').VariableDeclaration} node
+ * @param {import('./types').State} state
  */
 const handle_var_declaration = (node, state) => {
 	const chunks = [c(`${node.kind} `)];
@@ -353,7 +310,7 @@ const handle_var_declaration = (node, state) => {
 	return chunks;
 };
 
-/** @type {Record<string, Handler>} */
+/** @type {import('./types').Handlers} */
 const handlers = {
 	Program(node, state) {
 		return handle_body(node.body, state);
@@ -419,7 +376,7 @@ const handlers = {
 		return [c('with ('), ...handle(node.object, state), c(') '), ...handle(node.body, state)];
 	},
 
-	SwitchStatement(/** @type {SwitchStatement} */ node, state) {
+	SwitchStatement(node, state) {
 		const chunks = [c('switch ('), ...handle(node.discriminant, state), c(') {')];
 
 		node.cases.forEach((block) => {
@@ -543,7 +500,7 @@ const handlers = {
 		return [c('debugger', node), c(';')];
 	},
 
-	FunctionDeclaration: (/** @type {FunctionDeclaration} */ node, state) => {
+	FunctionDeclaration: (node, state) => {
 		const chunks = [];
 
 		if (node.async) chunks.push(c('async '));
@@ -609,7 +566,7 @@ const handlers = {
 		return chunks;
 	},
 
-	ImportDeclaration(/** @type {ImportDeclaration} */ node, state) {
+	ImportDeclaration(node, state) {
 		const chunks = [c('import ')];
 
 		const { length } = node.specifiers;
@@ -638,18 +595,16 @@ const handlers = {
 
 			if (i < length) {
 				// we have named specifiers
-				const specifiers = node.specifiers
-					.slice(i)
-					.map((/** @type {ImportSpecifier} */ specifier) => {
-						const name = handle(specifier.imported, state)[0];
-						const as = handle(specifier.local, state)[0];
+				const specifiers = node.specifiers.slice(i).map((specifier) => {
+					const name = handle(specifier.imported, state)[0];
+					const as = handle(specifier.local, state)[0];
 
-						if (name.content === as.content) {
-							return [as];
-						}
+					if (name.content === as.content) {
+						return [as];
+					}
 
-						return [name, c(' as '), as];
-					});
+					return [name, c(' as '), as];
+				});
 
 				const width =
 					get_length(chunks) +
@@ -698,7 +653,7 @@ const handlers = {
 		if (node.declaration) {
 			push_array(chunks, handle(node.declaration, state));
 		} else {
-			const specifiers = node.specifiers.map((/** @type {ExportSpecifier} */ specifier) => {
+			const specifiers = node.specifiers.map((specifier) => {
 				const name = handle(specifier.local, state)[0];
 				const as = handle(specifier.exported, state)[0];
 
@@ -778,7 +733,7 @@ const handlers = {
 		return chunks;
 	},
 
-	ArrowFunctionExpression: (/** @type {ArrowFunctionExpression} */ node, state) => {
+	ArrowFunctionExpression: (node, state) => {
 		const chunks = [];
 
 		if (node.async) chunks.push(c('async '));
@@ -871,10 +826,10 @@ const handlers = {
 	ArrayExpression(node, state) {
 		const chunks = [c('[')];
 
-		/** @type {Chunk[][]} */
+		/** @type {import('./types').Chunk[][]} */
 		const elements = [];
 
-		/** @type {Chunk[]} */
+		/** @type {import('./types').Chunk[]} */
 		let sparse_commas = [];
 
 		for (let i = 0; i < node.elements.length; i += 1) {
@@ -914,14 +869,14 @@ const handlers = {
 		return chunks;
 	},
 
-	ObjectExpression(/** @type {ObjectExpression} */ node, state) {
+	ObjectExpression(node, state) {
 		if (node.properties.length === 0) {
 			return [c('{}')];
 		}
 
 		let has_inline_comment = false;
 
-		/** @type {Chunk[]} */
+		/** @type {import('./types').Chunk[]} */
 		const chunks = [];
 		const separator = c(', ');
 
@@ -940,7 +895,7 @@ const handlers = {
 				chunks.push(c(', '));
 
 				while (state.comments.length) {
-					const comment = /** @type {Comment} */ (state.comments.shift());
+					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
 
 					chunks.push(
 						c(
@@ -1017,7 +972,7 @@ const handlers = {
 			push_array(
 				chunks,
 				join(
-					node.value.params.map((/** @type {Pattern} */ param) => handle(param, state)),
+					node.value.params.map((param) => handle(param, state)),
 					c(', ')
 				)
 			);
@@ -1047,7 +1002,7 @@ const handlers = {
 		return chunks;
 	},
 
-	SequenceExpression(/** @type {SequenceExpression} */ node, state) {
+	SequenceExpression(node, state) {
 		const expressions = node.expressions.map((e) => handle(e, state));
 
 		return [c('('), ...join(expressions, c(', ')), c(')')];
@@ -1158,7 +1113,7 @@ const handlers = {
 		return chunks;
 	},
 
-	NewExpression(/** @type {NewExpression} */ node, state) {
+	NewExpression(node, state) {
 		const chunks = [c('new ')];
 
 		if (
@@ -1195,7 +1150,7 @@ const handlers = {
 		return handle(node.expression, state);
 	},
 
-	CallExpression(/** @type {CallExpression} */ node, state) {
+	CallExpression(node, state) {
 		/**
 		 * @type any[]
 		 */
@@ -1297,7 +1252,7 @@ const handlers = {
 		return [c(name, node)];
 	},
 
-	Literal(/** @type {Literal} */ node, state) {
+	Literal(node, state) {
 		if (typeof node.value === 'string') {
 			return [
 				// TODO do we need to handle weird unicode characters somehow?
@@ -1309,7 +1264,7 @@ const handlers = {
 		return [c(node.raw || String(node.value), node)];
 	},
 
-	PropertyDefinition(/** @type {PropertyDefinition} */ node, state) {
+	PropertyDefinition(node, state) {
 		const chunks = [];
 
 		if (node.static) {
@@ -1341,7 +1296,7 @@ const handlers = {
 		return chunks;
 	},
 
-	PrivateIdentifier(/** @type {PrivateIdenifier} */ node, state) {
+	PrivateIdentifier(node, state) {
 		const chunks = [c('#')];
 
 		push_array(chunks, [c(node.name, node)]);
