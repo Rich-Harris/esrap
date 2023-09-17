@@ -1,4 +1,3 @@
-import * as perisopic from 'periscopic';
 import { handle } from './handlers.js';
 import { encode } from '@jridgewell/sourcemap-codec';
 
@@ -41,12 +40,8 @@ export function print(node, opts = {}) {
 		);
 	}
 
-	let { map: scope_map, scope } = perisopic.analyze(node);
-
 	const chunks = handle(node, {
 		indent: '',
-		scope,
-		scope_map,
 		comments: []
 	});
 

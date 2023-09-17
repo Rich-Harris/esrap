@@ -25,7 +25,6 @@
   "license": "MIT",
   "dependencies": {
     "@jridgewell/sourcemap-codec": "^1.4.15",
-    "@types/estree": "^1.0.1",
-    "periscopic": "^4.0.2"
+    "@types/estree": "^1.0.1"
   }
 }
