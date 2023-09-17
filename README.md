@@ -37,6 +37,10 @@ If the nodes of the input AST have `start` and `end` properties, sourcemap mappi
 
 Because it's ginormous.
 
+## Developing
+
+This repo uses [Bun](https://bun.sh/). Once it's installed, do `bun install` to install dependencies, and `bun test` to run the tests.
+
 ## License
 
 [MIT](LICENSE)
