@@ -72,6 +72,7 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		const { code, map } = print(ast);
 
 		Bun.write(`${__dirname}/samples/${dir}/_actual.js`, code);
+		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, map.toString());
 
 		expect(code.trim().replace(/^\t+$/gm, '')).toBe(expected.trim());
 	});

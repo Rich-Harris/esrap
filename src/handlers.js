@@ -31,7 +31,7 @@ import { push_array } from './utils.js';
 /**
  * @typedef {{
  *   content: string;
- *   loc?: {
+ *   loc: null | {
  *     start: { line: number; column: number; };
  *     end: { line: number; column: number; };
  *   };
@@ -46,10 +46,6 @@ import { push_array } from './utils.js';
 /**
  * @typedef {{
  *   indent: string;
- *   scope: any; // TODO import from periscopic
- *   scope_map: WeakMap<Node, any>;
- *   getName: (name: string) => string;
- *   deconflicted: WeakMap<Node, Map<string, string>>;
  *   comments: Comment[];
  * }} State
  */
@@ -101,7 +97,7 @@ export function handle(node, state) {
 function c(content, node) {
 	return {
 		content,
-		loc: node && node.loc,
+		loc: node?.loc ?? null,
 		has_newline: /\n/.test(content)
 	};
 }
@@ -269,39 +265,6 @@ const join = (nodes, separator) => {
 };
 
 /**
- * @param {(node: any, state: State) => Chunk[]} fn
- */
-const scoped = (fn) => {
-	/**
-	 * @param {any} node
-	 * @param {State} state
-	 */
-	const scoped_fn = (node, state) => {
-		return fn(node, {
-			...state,
-			scope: state.scope_map.get(node)
-		});
-	};
-
-	return scoped_fn;
-};
-
-/**
- * @param {string} name
- * @param {Set<string>} names
- */
-const deconflict = (name, names) => {
-	const original = name;
-	let i = 1;
-
-	while (names.has(name)) {
-		name = `${original}$${i++}`;
-	}
-
-	return name;
-};
-
-/**
  * @param {Node[]} nodes
  * @param {State} state
  */
@@ -319,7 +282,7 @@ const handle_body = (nodes, state) => {
 			let add_newline = false;
 
 			while (state.comments.length) {
-				const comment = state.comments.shift();
+				const comment = /** @type {Comment} */ (state.comments.shift());
 				const prefix = add_newline ? `\n${state.indent}` : ` `;
 
 				chunks.push(
@@ -386,13 +349,13 @@ const handlers = {
 		return handle_body(node.body, state);
 	},
 
-	BlockStatement: scoped((node, state) => {
+	BlockStatement: (node, state) => {
 		return [
 			c(`{\n${state.indent}\t`),
 			...handle_body(node.body, { ...state, indent: state.indent + '\t' }),
 			c(`\n${state.indent}}`)
 		];
-	}),
+	},
 
 	EmptyStatement(node, state) {
 		return [c(';')];
@@ -474,8 +437,7 @@ const handlers = {
 			const contains_comment =
 				node.argument.leadingComments &&
 				node.argument.leadingComments.some(
-					(/** @type import('../utils/comments.js').CommentWithLocation */ comment) =>
-						comment.has_trailing_newline
+					(/** @type {any} */ comment) => comment.has_trailing_newline
 				);
 			return [
 				c(contains_comment ? 'return (' : 'return '),
@@ -528,7 +490,7 @@ const handlers = {
 		];
 	},
 
-	ForStatement: scoped((node, state) => {
+	ForStatement: (node, state) => {
 		const chunks = [c('for (')];
 
 		if (node.init) {
@@ -548,9 +510,9 @@ const handlers = {
 		push_array(chunks, handle(node.body, state));
 
 		return chunks;
-	}),
+	},
 
-	ForInStatement: scoped((node, state) => {
+	ForInStatement: (node, state) => {
 		const chunks = [c(`for ${node.await ? 'await ' : ''}(`)];
 
 		if (node.left.type === 'VariableDeclaration') {
@@ -565,13 +527,13 @@ const handlers = {
 		push_array(chunks, handle(node.body, state));
 
 		return chunks;
-	}),
+	},
 
 	DebuggerStatement(node, state) {
 		return [c('debugger', node), c(';')];
 	},
 
-	FunctionDeclaration: scoped((/** @type {FunctionDeclaration} */ node, state) => {
+	FunctionDeclaration: (/** @type {FunctionDeclaration} */ node, state) => {
 		const chunks = [];
 
 		if (node.async) chunks.push(c('async '));
@@ -604,7 +566,7 @@ const handlers = {
 		push_array(chunks, handle(node.body, state));
 
 		return chunks;
-	}),
+	},
 
 	VariableDeclaration(node, state) {
 		return handle_var_declaration(node, state).concat(c(';'));
@@ -806,7 +768,7 @@ const handlers = {
 		return chunks;
 	},
 
-	ArrowFunctionExpression: scoped((/** @type {ArrowFunctionExpression} */ node, state) => {
+	ArrowFunctionExpression: (/** @type {ArrowFunctionExpression} */ node, state) => {
 		const chunks = [];
 
 		if (node.async) chunks.push(c('async '));
@@ -840,7 +802,7 @@ const handlers = {
 		}
 
 		return chunks;
-	}),
+	},
 
 	ThisExpression(node, state) {
 		return [c('this', node)];
@@ -968,7 +930,7 @@ const handlers = {
 				chunks.push(c(', '));
 
 				while (state.comments.length) {
-					const comment = state.comments.shift();
+					const comment = /** @type {Comment} */ (state.comments.shift());
 
 					chunks.push(
 						c(
@@ -1031,11 +993,6 @@ const handlers = {
 		const key = handle(node.key, state);
 
 		if (node.value.type === 'FunctionExpression' && !node.value.id) {
-			state = {
-				...state,
-				scope: state.scope_map.get(node.value)
-			};
-
 			const chunks = node.kind !== 'init' ? [c(`${node.kind} `)] : [];
 
 			if (node.value.async) {
@@ -1251,7 +1208,7 @@ const handlers = {
 		outer: for (const arg of node.arguments) {
 			const chunks = [];
 			while (state.comments.length) {
-				const comment = state.comments.shift();
+				const comment = /** @type {Comment} */ (state.comments.shift());
 				if (comment.type === 'Line') {
 					has_inline_comment = true;
 					break outer;
@@ -1272,7 +1229,7 @@ const handlers = {
 				});
 				if (i < node.arguments.length - 1) chunks.push(c(','));
 				while (state.comments.length) {
-					const comment = state.comments.shift();
+					const comment = /** @type {Comment} */ (state.comments.shift());
 					chunks.push(
 						c(comment.type === 'Block' ? ` /*${comment.value}*/ ` : ` //${comment.value}`)
 					);
@@ -1325,31 +1282,8 @@ const handlers = {
 		return [...handle(node.meta, state), c('.'), ...handle(node.property, state)];
 	},
 
-	Identifier(node, state) {
+	Identifier(node) {
 		let name = node.name;
-
-		if (name[0] === '@') {
-			name = state.getName(name.slice(1));
-		} else if (node.name[0] === '#') {
-			const owner = state.scope.find_owner(node.name);
-
-			if (!owner) {
-				throw new Error(`Could not find owner for node`);
-			}
-
-			if (!state.deconflicted.has(owner)) {
-				state.deconflicted.set(owner, new Map());
-			}
-
-			const deconflict_map = state.deconflicted.get(owner);
-
-			if (!deconflict_map.has(node.name)) {
-				deconflict_map.set(node.name, deconflict(node.name.slice(1), owner.references));
-			}
-
-			name = deconflict_map.get(node.name);
-		}
-
 		return [c(name, node)];
 	},
 

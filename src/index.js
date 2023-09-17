@@ -21,7 +21,6 @@ if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
  *   sourceMapSource?: string;
  *   sourceMapContent?: string;
  *   sourceMapEncodeMappings?: boolean; // default true
- *   getName?: (name: string) => string;
  * }} PrintOptions
  */
 
@@ -42,21 +41,12 @@ export function print(node, opts = {}) {
 		);
 	}
 
-	const {
-		getName = /** @param {string} x */ (x) => {
-			throw new Error(`Unhandled sigil @${x}`);
-		}
-	} = opts;
-
 	let { map: scope_map, scope } = perisopic.analyze(node);
-	const deconflicted = new WeakMap();
 
 	const chunks = handle(node, {
 		indent: '',
-		getName,
 		scope,
 		scope_map,
-		deconflicted,
 		comments: []
 	});
 
