@@ -26,6 +26,7 @@ export function handle(node, state) {
 		throw new Error(`Not implemented ${node.type}`);
 	}
 
+	// @ts-expect-error
 	const result = handler(node, state);
 
 	if (node.leadingComments) {
@@ -328,6 +329,7 @@ const handlers = {
 		return [c(';')];
 	},
 
+	// @ts-expect-error this isn't a real node type, but Acorn produces it
 	ParenthesizedExpression(node, state) {
 		return handle(node.expression, state);
 	},
@@ -1164,7 +1166,7 @@ const handlers = {
 			push_array(chunks, handle(node.callee, state));
 		}
 
-		if (/** @type {SimpleCallExpression} */ (node).optional) {
+		if (/** @type {import('estree').SimpleCallExpression} */ (node).optional) {
 			chunks.push(c('?.'));
 		}
 
@@ -1173,7 +1175,7 @@ const handlers = {
 		outer: for (const arg of node.arguments) {
 			const chunks = [];
 			while (state.comments.length) {
-				const comment = /** @type {Comment} */ (state.comments.shift());
+				const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
 				if (comment.type === 'Line') {
 					has_inline_comment = true;
 					break outer;
@@ -1194,7 +1196,7 @@ const handlers = {
 				});
 				if (i < node.arguments.length - 1) chunks.push(c(','));
 				while (state.comments.length) {
-					const comment = /** @type {Comment} */ (state.comments.shift());
+					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
 					chunks.push(
 						c(comment.type === 'Block' ? ` /*${comment.value}*/ ` : ` //${comment.value}`)
 					);
@@ -1288,7 +1290,7 @@ const handlers = {
 		return chunks;
 	},
 
-	StaticBlock(/** @type {StaticBlock} */ node, state) {
+	StaticBlock(node, state) {
 		const chunks = [c('static ')];
 
 		push_array(chunks, handlers.BlockStatement(node, state));
