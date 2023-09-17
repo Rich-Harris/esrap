@@ -13,6 +13,7 @@ function load(input) {
 		parse(input, {
 			ecmaVersion: 'latest',
 			sourceType: 'module',
+			locations: true,
 			onComment: (block, value, start, end) => {
 				if (block && /\n/.test(value)) {
 					let a = start;

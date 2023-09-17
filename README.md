@@ -31,7 +31,7 @@ const { code, map } = print({
 console.log(code); // alert('hello world!');
 ```
 
-If the nodes of the input AST have `start` and `end` properties, sourcemap mappings will be created.
+If the nodes of the input AST have `loc` properties (e.g. the AST was generated with [`acorn`](https://github.com/acornjs/acorn/tree/master/acorn/#interface) with the `locations` option set), sourcemap mappings will be created.
 
 ## Why not just use Prettier?
 
