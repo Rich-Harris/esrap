@@ -1,6 +1,11 @@
 {
   "name": "esrap",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "description": "Parse in reverse",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rich-Harris/esrap"
+  },
   "type": "module",
   "files": [
     "src",
