@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "x(a, b, c);\n\nx(a, b, () => {\n\tconsole.log('c');\n});\n\nx(\n\ta,\n\t() => {\n\t\tconsole.log('b');\n\t},\n\t() => {\n\t\tconsole.log('c');\n\t}\n);"
   ],
-  "mappings": ";;;;;;;;;;;;;;"
+  "mappings": "AAAA,CAAC,CAAC,CAAC,EAAE,CAAC,EAAE,CAAC;;AAET,CAAC,CAAC,CAAC,EAAE,CAAC;CACL,OAAO,CAAC,GAAG,CAAC,GAAG;;;AAGhB,CAAC;CACA,CAAC;;EAEA,OAAO,CAAC,GAAG,CAAC,GAAG;;;EAGf,OAAO,CAAC,GAAG,CAAC,GAAG;;"
 }

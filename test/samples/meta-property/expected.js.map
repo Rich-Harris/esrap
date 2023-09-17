@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "function foo() {\n\tconsole.log(new.target);\n}"
   ],
-  "mappings": ";;"
+  "mappings": "SAAS,GAAG;CACX,OAAO,CAAC,GAAG,CAAC,GAAG,CAAC,MAAM;"
 }

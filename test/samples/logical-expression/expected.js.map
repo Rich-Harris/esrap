@@ -1,1 +1,11 @@
-{"version":3,"names":[],"sources":["input.js"],"sourcesContent":[null],"mappings":";"}
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "a ?? (b || c);\n(a ?? b) || c;"
+  ],
+  "mappings": "AAAA,CAAC,KAAK,CAAC,IAAI,CAAC;CACX,CAAC,IAAI,CAAC,KAAK,CAAC"
+}

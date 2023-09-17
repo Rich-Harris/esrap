@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "foo?.bar.baz;\nx?.(a, b, c);\nx()?.();"
   ],
-  "mappings": ";;"
+  "mappings": "AAAA,GAAG,EAAE,GAAG,CAAC,GAAG;AACZ,CAAC,GAAG,CAAC,EAAE,CAAC,EAAE,CAAC;AACX,CAAC"
 }

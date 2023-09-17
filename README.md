@@ -33,6 +33,17 @@ console.log(code); // alert('hello world!');
 
 If the nodes of the input AST have `loc` properties (e.g. the AST was generated with [`acorn`](https://github.com/acornjs/acorn/tree/master/acorn/#interface) with the `locations` option set), sourcemap mappings will be created.
 
+## Options
+
+You can pass information that will be added to the resulting sourcemap (note that the AST is assumed to come from a single file):
+
+```js
+const { code, map } = parse(ast, {
+  sourceMapSource: 'input.js',
+  sourceMapContent: fs.readFileSync('input.js', 'utf-8')
+});
+```
+
 ## Why not just use Prettier?
 
 Because it's ginormous.

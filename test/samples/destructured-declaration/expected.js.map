@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "const { answer = 42 } = life_the_universe_and_everything;"
   ],
-  "mappings": ""
+  "mappings": "QAAQ,MAAM,GAAG,EAAE,KAAK,gCAAgC"
 }

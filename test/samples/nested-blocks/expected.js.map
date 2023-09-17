@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "console.log(one);\nconsole.log(two);\nconsole.log(three);\nconsole.log(four);"
   ],
-  "mappings": ";;;"
+  "mappings": "AAAA,OAAO,CAAC,GAAG,CAAC,GAAG;AACf,OAAO,CAAC,GAAG,CAAC,GAAG;AACf,OAAO,CAAC,GAAG,CAAC,KAAK;AACjB,OAAO,CAAC,GAAG,CAAC,IAAI"
 }

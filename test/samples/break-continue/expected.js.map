@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "x: for (let i = 0; i < 10; i += 1) {\n\tif (should_break) {\n\t\tbreak;\n\t}\n\n\tif (should_break_with_label) {\n\t\tbreak x;\n\t}\n\n\tif (should_continue) {\n\t\tcontinue;\n\t}\n\n\tif (should_continue_with_label) {\n\t\tcontinue x;\n\t}\n}"
   ],
-  "mappings": ";;;;;;;;;;;;;;;;"
+  "mappings": "AAAA,CAAC,WAAW,CAAC,GAAG,CAAC,EAAE,CAAC,GAAG,EAAE,EAAE,CAAC,IAAI,CAAC;KAC5B,YAAY;;;;KAIZ,uBAAuB;QACpB,CAAC;;;KAGJ,eAAe;;;;KAIf,0BAA0B;WACpB,CAAC;;"
 }

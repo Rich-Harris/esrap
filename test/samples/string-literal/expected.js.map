@@ -1,1 +1,11 @@
-{"version":3,"names":[],"sources":["input.js"],"sourcesContent":[null],"mappings":";;;;;;;;;;"}
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "let a = 'foo';\nlet b = \"foo\";\nlet c = `foo`;\nlet d = '\\n\\t\\ta\\n\\t\\tb\\n\\t\\tc\\n\\t';\nlet e = \"\\n\\t\\ta\\n\\t\\tb\\n\\t\\tc\\n\\t\";\n\nlet f = `\n\t\ta\n\t\tb\n\t\tc\n\t`;"
+  ],
+  "mappings": "IAAI,CAAC,GAAG,KAAK;IACT,CAAC,GAAG,KAAK;IACT,CAAC;IACD,CAAC,GAAG,2BAA2B;IAC/B,CAAC,GAAG,2BAA2B;;IAE/B,CAAC;;;;"
+}

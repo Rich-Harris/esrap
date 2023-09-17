@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "for (let i$1 = 0; i$1 < 10; i$1 += 1) {\n\tconsole.log(i * i$1);\n}"
   ],
-  "mappings": ";;"
+  "mappings": "SAAS,GAAG,GAAG,CAAC,EAAE,GAAG,GAAG,EAAE,EAAE,GAAG,IAAI,CAAC;CACnC,OAAO,CAAC,GAAG,CAAC,CAAC,GAAG,GAAG;"
 }

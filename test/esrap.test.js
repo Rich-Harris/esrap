@@ -57,7 +57,7 @@ function load(input) {
 		}
 	});
 
-	return ast;
+	return /** @type {Program} */ (ast);
 }
 
 for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
@@ -67,14 +67,32 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		const input_js = Bun.file(`${__dirname}/samples/${dir}/input.js`);
 		const input_json = Bun.file(`${__dirname}/samples/${dir}/input.json`);
 		const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
+		const expected_map = await Bun.file(`${__dirname}/samples/${dir}/expected.js.map`).json();
 
-		const ast = input_json.size > 0 ? await input_json.json() : load(await input_js.text());
+		/** @type {import('estree').Program} */
+		let ast;
 
-		const { code, map } = print(ast);
+		/** @type {import('../src/index.js').PrintOptions} */
+		let opts;
+
+		if (input_json.size > 0) {
+			ast = await input_json.json();
+			opts = {};
+		} else {
+			const content = await input_js.text();
+			ast = load(content);
+			opts = {
+				sourceMapSource: 'input.js',
+				sourceMapContent: content
+			};
+		}
+
+		const { code, map } = print(ast, opts);
 
 		Bun.write(`${__dirname}/samples/${dir}/_actual.js`, code);
-		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, map.toString());
+		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
 
 		expect(code.trim().replace(/^\t+$/gm, '')).toBe(expected.trim());
+		expect(map).toEqual(expected_map);
 	});
 }

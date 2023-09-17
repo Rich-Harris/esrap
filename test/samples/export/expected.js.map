@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "const foo = 42;\nexport { foo };"
   ],
-  "mappings": ";"
+  "mappings": "MAAM,GAAG,GAAG,EAAE;SACL,GAAG"
 }

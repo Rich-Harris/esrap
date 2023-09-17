@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "const obj = {\n\ta,\n\tb,\n\tc,\n\td,\n\te,\n\tf,\n\tg,\n\th,\n\ti,\n\tj,\n\tk,\n\tl,\n\tm,\n\tn,\n\to,\n\tp,\n\tq,\n\tr,\n\ts,\n\tt,\n\tu,\n\tv,\n\tw,\n\tx,\n\ty,\n\tz\n};\n\nconst obj2 = {\n\t\ta,\n\t\tb,\n\t\tc,\n\t\td,\n\t\te,\n\t\tf,\n\t\tg,\n\t\th,\n\t\ti,\n\t\tj,\n\t\tk,\n\t\tl,\n\t\tm,\n\t\tn,\n\t\to,\n\t\tp,\n\t\tq,\n\t\tr,\n\t\ts,\n\t\tt,\n\t\tu,\n\t\tv,\n\t\tw,\n\t\tx,\n\t\ty,\n\t\tz\n\t},\n\ta = 1,\n\tb = 2;"
   ],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;"
+  "mappings": "MAAM,GAAG;CACR,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;CACD,CAAC;;;MAGI,IAAI;EACR,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;EACD,CAAC;;CAEF,CAAC,GAAG,CAAC;CACL,CAAC,GAAG,CAAC"
 }

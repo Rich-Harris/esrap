@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "import { foo as bar } from 'x';"
   ],
-  "mappings": ""
+  "mappings": "SAAS,GAAG,IAAI,GAAG,QAAQ,GAAG"
 }

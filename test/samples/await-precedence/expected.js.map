@@ -1,1 +1,11 @@
-{"version":3,"names":[],"sources":["input.js"],"sourcesContent":[null],"mappings":";"}
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "await (a || b);\nawait c;"
+  ],
+  "mappings": "OAAO,CAAC,IAAI,CAAC;MACP,CAAC"
+}

@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "obj = {\n\tfoo() {\n\t\tconsole.log('foo');\n\t},\n\tasync bar() {\n\t\tconsole.log('bar');\n\t},\n\t*baz() {\n\t\tconsole.log('baz');\n\t}\n};"
   ],
-  "mappings": ";;;;;;;;;;"
+  "mappings": "AAAA,GAAG;CACF,GAAG;EACF,OAAO,CAAC,GAAG,CAAC,KAAK;;OAEZ,GAAG;EACR,OAAO,CAAC,GAAG,CAAC,KAAK;;EAEjB,GAAG;EACH,OAAO,CAAC,GAAG,CAAC,KAAK;;"
 }

@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "try {\n\tfoo();\n} catch {\n\tbar();\n}\n\ntry {\n\tfoo();\n} catch(e) {\n\tbar(e);\n} finally {\n\tbaz();\n}"
   ],
-  "mappings": ";;;;;;;;;;;;"
+  "mappings": ";CACC,GAAG;;CAEH,GAAG;;;;CAIH,GAAG;QACI,CAAC;CACR,GAAG,CAAC,CAAC;;CAEL,GAAG;"
 }

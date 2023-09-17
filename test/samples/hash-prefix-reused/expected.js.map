@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "function foo(bar$1) {\n\tconst bar = 'x';\n\tbar$1 += 1;\n\n\treturn bar => {\n\t\tconsole.log(bar);\n\t};\n}"
   ],
-  "mappings": ";;;;;;;"
+  "mappings": "SAAS,GAAG,CAAC,KAAK;OACX,GAAG,GAAG,GAAG;CACf,KAAK,IAAI,CAAC;;QAEH,GAAG;EACT,OAAO,CAAC,GAAG,CAAC,GAAG;;"
 }

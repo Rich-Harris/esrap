@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "/(?:^\\xb1\\X\\u765F)?/;\n"
   ],
-  "mappings": ""
+  "mappings": "AAAA,oBAAoB"
 }

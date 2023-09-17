@@ -16,7 +16,6 @@ if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
 
 /**
  * @typedef {{
- *   file?: string;
  *   sourceMapSource?: string;
  *   sourceMapContent?: string;
  *   sourceMapEncodeMappings?: boolean; // default true

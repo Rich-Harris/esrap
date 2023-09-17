@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "function foo(bar, baz) {\n\treturn bar * baz;\n}"
   ],
-  "mappings": ";;"
+  "mappings": "SAAS,GAAG,CAAC,GAAG,EAAE,GAAG;QACb,GAAG,GAAG,GAAG;"
 }

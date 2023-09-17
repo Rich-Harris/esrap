@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "foo({ a: 1 });\n\"#foo\";\n\"@foo\";"
   ],
-  "mappings": ";;"
+  "mappings": "AAAA,GAAG,GAAG,CAAC,EAAE,CAAC;AACV,MAAM;AACN,MAAM"
 }

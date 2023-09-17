@@ -1,1 +1,11 @@
-{"version":3,"names":[],"sources":["input.js"],"sourcesContent":[null],"mappings":";;;;"}
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "class Foo {\n\thi;\n\tstatic foo = 1;\n\t[KEY] = 2;\n}"
+  ],
+  "mappings": "MAAM,GAAG;CACR,EAAE;QACK,GAAG,GAAG,CAAC;EACb,GAAG,IAAI,CAAC;"
+}

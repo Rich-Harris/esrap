@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "foo`bar`;"
   ],
-  "mappings": ""
+  "mappings": "AAAA,GAAG"
 }

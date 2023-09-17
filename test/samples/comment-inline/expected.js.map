@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "// comment before a node\n// second line\nconsole.log(1);\n\nconsole.log(2); // comment on same line as node\n\nconst obj = {\n\tfoo: 1, // comment in middle of object\n\tbar: 2\n};\n\nfunction bar() {\n\treturn /*result*/ foo;\n}"
   ],
-  "mappings": ";;;;;;;;;;;;;"
+  "mappings": ";;AAEA,OAAO,CAAC,GAAG,CAAC,CAAC;;AAEb,OAAO,CAAC,GAAG,CAAC,CAAC;;MAEP,GAAG;CACR,GAAG,EAAE,CAAC;CACN,GAAG,EAAE,CAAC;;;SAGE,GAAG;mBACO,GAAG;"
 }

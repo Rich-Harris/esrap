@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "function foo() {\n\tbar;\n}\n"
   ],
-  "mappings": ";;;;;;"
+  "mappings": "SAAS,GAAG;CACX,GAAG;"
 }

@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    null
+    "import {\n\tabc,\n\tbcd,\n\tcde,\n\tdef,\n\tefg,\n\tfgh,\n\tghi,\n\thij,\n\tijk,\n\tjkl,\n\tklm,\n\tlmn,\n\tmno,\n\tnop,\n\topq\n} from 'x';"
   ],
-  "mappings": ";;;;;;;;;;;;;;;;"
+  "mappings": ";CACC,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;CACH,GAAG;OACG,GAAG"
 }

@@ -1,1 +1,11 @@
-{"version":3,"names":[],"sources":["input.js"],"sourcesContent":[null],"mappings":";;;;;"}
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "while (a) ;\ndo ; while (a);\nfor (; ; ) ;\nif (a) ;\nif (a) ; else ;\nif (a) ; else if (b) ; else ;"
+  ],
+  "mappings": "OAAO,CAAC;YACI,CAAC;;IAET,CAAC;IACD,CAAC;IACD,CAAC,aAAa,CAAC"
+}
