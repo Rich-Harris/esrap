@@ -1,0 +1,7 @@
+if (false) {
+
+}
+
+function x() {
+
+}
