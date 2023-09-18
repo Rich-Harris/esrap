@@ -1,6 +1,4 @@
-function foo() {
-
-} // hey1
+function foo() {} // hey1
 /*
 hey2
 */

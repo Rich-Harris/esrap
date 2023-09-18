@@ -408,6 +408,8 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'BlockStatement|ClassBody': (node, state) => {
+		if (node.body.length === 0) return [c('{}')];
+
 		return [
 			c(`{\n${state.indent}\t`),
 			...handle_body(node.body, { ...state, indent: state.indent + '\t' }),
