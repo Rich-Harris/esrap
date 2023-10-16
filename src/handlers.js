@@ -186,7 +186,7 @@ function needs_parens(node, parent, is_right) {
 /** @param {import('estree').Node} node */
 function has_call_expression(node) {
 	while (node) {
-		if (node.type[0] === 'CallExpression') {
+		if (node.type === 'CallExpression') {
 			return true;
 		} else if (node.type === 'MemberExpression') {
 			node = node.object;
