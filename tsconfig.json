@@ -8,6 +8,7 @@
 		"module": "esnext",
 		"moduleResolution": "bundler",
 		"lib": ["esnext", "dom"],
+		"types": ["bun-types"]
 	},
 	"include": [
 		"src"

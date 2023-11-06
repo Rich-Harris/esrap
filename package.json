@@ -20,6 +20,7 @@
   "types": "./types/index.d.ts",
   "devDependencies": {
     "acorn": "^8.10.0",
+    "bun-types": "^1.0.9",
     "dts-buddy": "^0.2.4",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2",

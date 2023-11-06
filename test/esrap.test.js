@@ -57,7 +57,7 @@ function load(input) {
 		}
 	});
 
-	return /** @type {Program} */ (ast);
+	return /** @type {import('estree').Program} */ (ast);
 }
 
 for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
