@@ -66,8 +66,6 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 	test(dir, async () => {
 		const input_js = Bun.file(`${__dirname}/samples/${dir}/input.js`);
 		const input_json = Bun.file(`${__dirname}/samples/${dir}/input.json`);
-		const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
-		const expected_map = await Bun.file(`${__dirname}/samples/${dir}/expected.js.map`).json();
 
 		/** @type {import('estree').Program} */
 		let ast;
@@ -92,7 +90,10 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		Bun.write(`${__dirname}/samples/${dir}/_actual.js`, code);
 		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
 
+		const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
 		expect(code.trim().replace(/^\t+$/gm, '')).toBe(expected.trim());
+
+		const expected_map = await Bun.file(`${__dirname}/samples/${dir}/expected.js.map`).json();
 		expect(map).toEqual(expected_map);
 	});
 }

@@ -7,8 +7,7 @@
 		"target": "esnext",
 		"module": "esnext",
 		"moduleResolution": "bundler",
-		"lib": ["esnext", "dom"],
-		"types": ["bun-types"]
+		"lib": ["esnext", "dom"]
 	},
 	"include": [
 		"src"

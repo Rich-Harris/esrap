@@ -30,21 +30,7 @@ export function handle(node, state) {
 	const result = handler(node, state);
 
 	if (node.leadingComments) {
-		result.unshift(
-			c(
-				node.leadingComments
-					.map((comment) =>
-						comment.type === 'Block'
-							? `/*${comment.value}*/${
-									/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
-							  }`
-							: `//${comment.value}${
-									/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
-							  }`
-					)
-					.join(``)
-			)
-		);
+		prepend_comments(result, node.leadingComments, state);
 	}
 
 	if (node.trailingComments) {
@@ -65,6 +51,29 @@ function c(content, node) {
 		loc: node?.loc ?? null,
 		has_newline: /\n/.test(content)
 	};
+}
+
+/**
+ * @param {import('./types').Chunk[]} chunks
+ * @param {import('estree').Comment[]} comments
+ * @param {import('./types').State} state
+ */
+function prepend_comments(chunks, comments, state) {
+	chunks.unshift(
+		c(
+			comments
+				.map((comment) =>
+					comment.type === 'Block'
+						? `/*${comment.value}*/${
+								/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
+						  }`
+						: `//${comment.value}${
+								/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
+						  }`
+				)
+				.join(``)
+		)
+	);
 }
 
 const OPERATOR_PRECEDENCE = {
@@ -235,53 +244,105 @@ const join = (nodes, separator) => {
 	return joined;
 };
 
+const grouped_expression_types = [
+	'ImportDeclaration',
+	'VariableDeclaration',
+	'ExportDefaultDeclaration',
+	'ExportNamedDeclaration'
+];
+
 /**
  * @param {import('estree').Node[]} nodes
  * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
-	const chunks = [];
+	/** @type {import('./types').Chunk[][][]} */
+	const groups = [];
 
-	const body = nodes
-		.filter((statement) => statement.type !== 'EmptyStatement')
-		.map((statement) => {
-			const chunks = handle(statement, {
-				...state,
-				indent: state.indent
-			});
+	/** @type {import('./types').Chunk[][]} */
+	let group = [];
 
-			let add_newline = false;
+	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
 
-			while (state.comments.length) {
-				const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-				const prefix = add_newline ? `\n${state.indent}` : ` `;
+	function flush() {
+		if (group.length > 0) {
+			groups.push(group);
+			group = [];
+		}
+	}
 
-				chunks.push(
-					c(
-						comment.type === 'Block'
-							? `${prefix}/*${comment.value}*/`
-							: `${prefix}//${comment.value}`
-					)
-				);
+	for (const statement of nodes) {
+		if (statement.type === 'EmptyStatement') continue;
 
-				add_newline = comment.type === 'Line';
-			}
-
-			return chunks;
-		});
-
-	let needed_padding = false;
-
-	for (let i = 0; i < body.length; i += 1) {
-		const needs_padding = has_newline(body[i]);
-
-		if (i > 0) {
-			chunks.push(c(needs_padding || needed_padding ? `\n\n${state.indent}` : `\n${state.indent}`));
+		if (
+			(grouped_expression_types.includes(statement.type) ||
+				grouped_expression_types.includes(last_statement.type)) &&
+			last_statement.type !== statement.type
+		) {
+			flush();
 		}
 
-		push_array(chunks, body[i]);
+		const leadingComments = statement.leadingComments;
+		delete statement.leadingComments;
 
-		needed_padding = needs_padding;
+		const chunks = handle(statement, {
+			...state,
+			indent: state.indent
+		});
+
+		// if a statement requires multiple lines, or it has a leading `/**` comment,
+		// we add blank lines around it
+		const standalone =
+			has_newline(chunks) ||
+			(leadingComments?.[0]?.type === 'Block' && leadingComments[0].value.startsWith('*'));
+
+		if (leadingComments && leadingComments.length > 0) {
+			prepend_comments(chunks, leadingComments, state);
+			flush();
+		}
+
+		let add_newline = false;
+
+		while (state.comments.length) {
+			const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+			const prefix = add_newline ? `\n${state.indent}` : ` `;
+
+			chunks.push(
+				c(
+					comment.type === 'Block' ? `${prefix}/*${comment.value}*/` : `${prefix}//${comment.value}`
+				)
+			);
+
+			add_newline = comment.type === 'Line';
+		}
+
+		if (standalone) {
+			flush();
+			group.push(chunks);
+			flush();
+		} else {
+			group.push(chunks);
+		}
+
+		last_statement = statement;
+	}
+
+	flush();
+
+	const chunks = [];
+
+	for (let i = 0; i < groups.length; i += 1) {
+		if (i > 0) {
+			chunks.push(c(`\n\n${state.indent}`));
+		}
+
+		for (let j = 0; j < groups[i].length; j += 1) {
+			if (j > 0) {
+				chunks.push(c(`\n${state.indent}`));
+			}
+
+			push_array(chunks, groups[i][j]);
+		}
 	}
 
 	return chunks;

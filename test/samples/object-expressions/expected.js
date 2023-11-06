@@ -4,7 +4,9 @@ obj = { true: true };
 obj = { foo };
 obj = { [foo]: foo };
 obj = { [foo]: "foo" };
+
 let blah;
+
 obj = { blah };
 obj = { blah };
 obj = { a: b };
