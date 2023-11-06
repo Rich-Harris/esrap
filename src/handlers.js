@@ -30,21 +30,7 @@ export function handle(node, state) {
 	const result = handler(node, state);
 
 	if (node.leadingComments) {
-		result.unshift(
-			c(
-				node.leadingComments
-					.map((comment) =>
-						comment.type === 'Block'
-							? `/*${comment.value}*/${
-									/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
-							  }`
-							: `//${comment.value}${
-									/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
-							  }`
-					)
-					.join(``)
-			)
-		);
+		prepend_comments(result, node.leadingComments, state);
 	}
 
 	if (node.trailingComments) {
@@ -65,6 +51,29 @@ function c(content, node) {
 		loc: node?.loc ?? null,
 		has_newline: /\n/.test(content)
 	};
+}
+
+/**
+ * @param {import('./types').Chunk[]} chunks
+ * @param {import('estree').Comment[]} comments
+ * @param {import('./types').State} state
+ */
+function prepend_comments(chunks, comments, state) {
+	chunks.unshift(
+		c(
+			comments
+				.map((comment) =>
+					comment.type === 'Block'
+						? `/*${comment.value}*/${
+								/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
+						  }`
+						: `//${comment.value}${
+								/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
+						  }`
+				)
+				.join(``)
+		)
+	);
 }
 
 const OPERATOR_PRECEDENCE = {
@@ -274,10 +283,24 @@ const handle_body = (nodes, state) => {
 			flush();
 		}
 
+		const leadingComments = statement.leadingComments;
+		delete statement.leadingComments;
+
 		const chunks = handle(statement, {
 			...state,
 			indent: state.indent
 		});
+
+		// if a statement requires multiple lines, or it has a leading `/**` comment,
+		// we add blank lines around it
+		const standalone =
+			has_newline(chunks) ||
+			(leadingComments?.[0]?.type === 'Block' && leadingComments[0].value.startsWith('*'));
+
+		if (leadingComments && leadingComments.length > 0) {
+			prepend_comments(chunks, leadingComments, state);
+			flush();
+		}
 
 		let add_newline = false;
 
@@ -294,7 +317,7 @@ const handle_body = (nodes, state) => {
 			add_newline = comment.type === 'Line';
 		}
 
-		if (has_newline(chunks)) {
+		if (standalone) {
 			flush();
 			group.push(chunks);
 			flush();
