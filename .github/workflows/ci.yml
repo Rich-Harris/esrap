@@ -12,6 +12,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  Check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - name: check
+        run: bun check
   Tests:
     runs-on: ubuntu-latest
     steps:
@@ -21,5 +30,3 @@ jobs:
       - run: bun install
       - name: test
         run: bun test
-      - name: check
-        run: bun check
