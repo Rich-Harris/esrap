@@ -252,8 +252,7 @@ const grouped_expression_types = [
 ];
 
 /**
- * @template {import('estree').Statement | import('estree').Declaration | import('estree').ModuleDeclaration} Statement
- * @param {Statement[]} nodes
+ * @param {import('estree').Node[]} nodes
  * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
@@ -263,7 +262,7 @@ const handle_body = (nodes, state) => {
 	/** @type {import('./types').Chunk[][]} */
 	let group = [];
 
-	let last_statement = /** @type {Statement} */ ({ type: 'EmptyStatement' });
+	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
 
 	function flush() {
 		if (group.length > 0) {
