@@ -38,7 +38,7 @@ If the nodes of the input AST have `loc` properties (e.g. the AST was generated 
 You can pass information that will be added to the resulting sourcemap (note that the AST is assumed to come from a single file):
 
 ```js
-const { code, map } = parse(ast, {
+const { code, map } = print(ast, {
   sourceMapSource: 'input.js',
   sourceMapContent: fs.readFileSync('input.js', 'utf-8')
 });
