@@ -39,9 +39,13 @@ export function print(node, opts = {}) {
 		);
 	}
 
-	const chunks = handle(node, {
-		indent: '',
-		comments: []
+	/** @type {import('./types').Command[]} */
+	const commands = [];
+
+	handle(node, {
+		commands,
+		comments: [],
+		multiline: false
 	});
 
 	/** @typedef {[number, number, number, number]} Segment */
@@ -55,22 +59,12 @@ export function print(node, opts = {}) {
 	/** @type {Segment[]} */
 	let current_line = [];
 
-	for (let i = 0; i < chunks.length; i += 1) {
-		const chunk = chunks[i];
+	/** @param {string} str */
+	function append(str) {
+		code += str;
 
-		code += chunk.content;
-
-		if (chunk.loc) {
-			current_line.push([
-				current_column,
-				0, // source index is always zero
-				chunk.loc.start.line - 1,
-				chunk.loc.start.column
-			]);
-		}
-
-		for (let i = 0; i < chunk.content.length; i += 1) {
-			if (chunk.content[i] === '\n') {
+		for (let i = 0; i < str.length; i += 1) {
+			if (str[i] === '\n') {
 				mappings.push(current_line);
 				current_line = [];
 				current_column = 0;
@@ -78,15 +72,79 @@ export function print(node, opts = {}) {
 				current_column += 1;
 			}
 		}
+	}
 
-		if (chunk.loc) {
-			current_line.push([
-				current_column,
-				0, // source index is always zero
-				chunk.loc.end.line - 1,
-				chunk.loc.end.column
-			]);
+	let indent = '';
+
+	/** @param {import('./types').Command} command */
+	function run(command) {
+		if (typeof command === 'string') {
+			append(command);
+			return;
 		}
+
+		if (command.type === 'Chunk') {
+			const loc = command.loc;
+
+			if (loc) {
+				current_line.push([
+					current_column,
+					0, // source index is always zero
+					loc.start.line - 1,
+					loc.start.column
+				]);
+			}
+
+			append(command.content);
+
+			if (loc) {
+				current_line.push([
+					current_column,
+					0, // source index is always zero
+					loc.end.line - 1,
+					loc.end.column
+				]);
+			}
+
+			return;
+		}
+
+		if (command.type === 'Indent') {
+			append(indent);
+			return;
+		}
+
+		if (command.type === 'IndentChange') {
+			if (command.offset > 0) {
+				indent += '\t'.repeat(command.offset);
+			} else if (command.offset < 0) {
+				indent = indent.slice(0, command.offset);
+			}
+
+			return;
+		}
+
+		if (command.type === 'Conditional') {
+			if (command.condition) {
+				run(command.consequent);
+			} else if (command.alternate) {
+				run(command.alternate);
+			}
+
+			return;
+		}
+
+		if (command.type === 'Sequence') {
+			for (let i = 0; i < command.children.length; i += 1) {
+				run(command.children[i]);
+			}
+
+			return;
+		}
+	}
+
+	for (let i = 0; i < commands.length; i += 1) {
+		run(commands[i]);
 	}
 
 	mappings.push(current_line);
