@@ -1,6 +1,15 @@
 // heavily based on https://github.com/davidbonnet/astring
 // released under MIT license https://github.com/davidbonnet/astring/blob/master/LICENSE
 
+/** @type {import('./types').Newline} */
+const newline = { type: 'Newline' };
+
+/** @type {import('./types').Indent} */
+const indent = { type: 'Indent' };
+
+/** @type {import('./types').Dedent} */
+const dedent = { type: 'Dedent' };
+
 /**
  * Does `array.push` for all `items`. Needed because `array.push(...items)` throws
  * "Maximum call stack size exceeded" when `items` is too big of an array.
@@ -253,7 +262,7 @@ const grouped_expression_types = [
  */
 const handle_body = (nodes, state) => {
 	/** @type {import('./types').Sequence} */
-	const join = { type: 'Sequence', children: ['\n', { type: 'Indent' }] };
+	const join = { type: 'Sequence', children: [newline] };
 
 	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
 	let first = true;
@@ -376,9 +385,9 @@ const shared = {
 		if (multiline) {
 			state.multiline = true;
 
-			open.children.push('\n', { type: 'IndentChange', offset: 1 }, { type: 'Indent' });
-			join.children.push(',\n', { type: 'Indent' });
-			close.children.push('\n', { type: 'IndentChange', offset: -1 }, { type: 'Indent' });
+			open.children.push(indent, newline);
+			join.children.push(',', newline);
+			close.children.push(dedent, newline);
 		} else {
 			join.children.push(', ');
 		}
@@ -444,9 +453,9 @@ const shared = {
 
 		state.multiline = true;
 
-		state.commands.push('{\n', { type: 'IndentChange', offset: 1 }, { type: 'Indent' });
+		state.commands.push(indent, '{', newline);
 		handle_body(node.body, state);
-		state.commands.push({ type: 'IndentChange', offset: -1 }, '\n', { type: 'Indent' }, '}');
+		state.commands.push(dedent, newline, '}');
 	},
 
 	/**
@@ -775,9 +784,9 @@ const handlers = {
 		if (multiline) {
 			state.multiline = true;
 
-			open.children.push('\n', { type: 'IndentChange', offset: 1 }, { type: 'Indent' });
-			join.children.push(',\n', { type: 'Indent' });
-			close.children.push('\n', { type: 'IndentChange', offset: -1 }, { type: 'Indent' });
+			open.children.push(indent, newline);
+			join.children.push(',', newline);
+			close.children.push(dedent, newline);
 		} else {
 			open.children.push(' ');
 			join.children.push(', ');
@@ -1216,11 +1225,11 @@ const handlers = {
 	SpreadElement: shared['RestElement|SpreadElement'],
 
 	StaticBlock(node, state) {
-		state.commands.push('static {\n', { type: 'IndentChange', offset: 1 }, { type: 'Indent' });
+		state.commands.push(indent, 'static {', newline);
 
 		handle_body(node.body, state);
 
-		state.commands.push({ type: 'IndentChange', offset: -1 }, '\n', { type: 'Indent' }, '}');
+		state.commands.push(dedent, newline, '}');
 	},
 
 	Super(node, state) {
@@ -1230,7 +1239,7 @@ const handlers = {
 	SwitchStatement(node, state) {
 		state.commands.push('switch (');
 		handle(node.discriminant, state);
-		state.commands.push(') {', { type: 'IndentChange', offset: 1 });
+		state.commands.push(') {', indent);
 
 		for (const block of node.cases) {
 			if (block.test) {
@@ -1247,7 +1256,7 @@ const handlers = {
 			}
 		}
 
-		state.commands.push({ type: 'IndentChange', offset: -1 }, `\n}`);
+		state.commands.push(dedent, `\n}`);
 	},
 
 	TaggedTemplateExpression(node, state) {

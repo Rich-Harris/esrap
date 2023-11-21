@@ -74,7 +74,7 @@ export function print(node, opts = {}) {
 		}
 	}
 
-	let indent = '';
+	let newline = '\n';
 
 	/** @param {import('./types').Command} command */
 	function run(command) {
@@ -109,18 +109,18 @@ export function print(node, opts = {}) {
 			return;
 		}
 
-		if (command.type === 'Indent') {
-			append(indent);
+		if (command.type === 'Newline') {
+			append(newline);
 			return;
 		}
 
-		if (command.type === 'IndentChange') {
-			if (command.offset > 0) {
-				indent += '\t'.repeat(command.offset);
-			} else if (command.offset < 0) {
-				indent = indent.slice(0, command.offset);
-			}
+		if (command.type === 'Indent') {
+			newline += '\t';
+			return;
+		}
 
+		if (command.type === 'Dedent') {
+			newline = newline.slice(0, -1);
 			return;
 		}
 

@@ -23,8 +23,16 @@ export interface Chunk {
 	};
 }
 
+export interface Newline {
+	type: 'Newline';
+}
+
 export interface Indent {
 	type: 'Indent';
+}
+
+export interface Dedent {
+	type: 'Dedent';
 }
 
 export interface IndentChange {
@@ -44,4 +52,4 @@ export interface Sequence {
 	children: Command[];
 }
 
-export type Command = string | Chunk | Indent | IndentChange | Conditional | Sequence;
+export type Command = string | Chunk | Newline | Indent | Dedent | Conditional | Sequence;
