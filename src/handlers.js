@@ -497,38 +497,19 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'FunctionDeclaration|FunctionExpression': (node, state) => {
-		const chunks = [];
-
-		if (node.async) chunks.push(c('async '));
-		chunks.push(c(node.generator ? 'function* ' : 'function '));
+		if (node.async) state.commands.push(c('async '));
+		state.commands.push(c(node.generator ? 'function* ' : 'function '));
 		if (node.id) handle(node.id, state);
-		chunks.push(c('('));
-
-		state.commands.push({
-			type: 'IndentChange',
-			offset: 1
-		});
+		state.commands.push(c('('));
 
 		for (const p of node.params) {
 			handle(p, state);
 		}
 
-		const multiple_lines = false; // TODO
+		const multiple_lines = false; // TODO params on multiple lines
 
-		const separator = c(multiple_lines ? `,\n${state.indent}` : ', ');
-
-		if (multiple_lines) {
-			chunks.push(c(`\n${state.indent}\t`));
-			push_array(chunks, join(params, separator));
-			chunks.push(c(`\n${state.indent}`));
-		} else {
-			push_array(chunks, join(params, separator));
-		}
-
-		chunks.push(c(') '));
-		push_array(chunks, handle(node.body, state));
-
-		return chunks;
+		state.commands.push(c(') '));
+		handle(node.body, state);
 	},
 
 	/**
@@ -590,7 +571,9 @@ const handlers = {
 	},
 
 	AssignmentPattern(node, state) {
-		return [...handle(node.left, state), c(` = `), ...handle(node.right, state)];
+		handle(node.left, state);
+		state.commands.push(' = ');
+		handle(node.right, state);
 	},
 
 	AwaitExpression(node, state) {
@@ -714,17 +697,15 @@ const handlers = {
 	},
 
 	DoWhileStatement(node, state) {
-		return [
-			c('do '),
-			...handle(node.body, state),
-			c(' while ('),
-			...handle(node.test, state),
-			c(');')
-		];
+		state.commands.push('do ');
+		handle(node.body, state);
+		state.commands.push(' while (');
+		handle(node.test, state);
+		state.commands.push(');');
 	},
 
 	EmptyStatement(node, state) {
-		return [c(';')];
+		state.commands.push(';');
 	},
 
 	ExportAllDeclaration(node, state) {
@@ -742,43 +723,69 @@ const handlers = {
 	},
 
 	ExportNamedDeclaration(node, state) {
-		const chunks = [c('export ')];
+		state.commands.push('export ');
 
 		if (node.declaration) {
-			push_array(chunks, handle(node.declaration, state));
-		} else {
-			const specifiers = node.specifiers.map((specifier) => {
-				const name = handle(specifier.local, state)[0];
-				const as = handle(specifier.exported, state)[0];
+			handle(node.declaration, state);
+			return;
+		}
 
-				if (name.content === as.content) {
-					return [name];
-				}
+		if (node.specifiers.length === 0) {
+			state.commands.push('{};');
+			return;
+		}
 
-				return [name, c(' as '), as];
-			});
+		/** @type {import('./types').Sequence} */
+		const open = { type: 'Sequence', children: [] };
 
-			const width = 7 + specifiers.map(get_length).reduce(sum, 0) + 2 * specifiers.length;
+		/** @type {import('./types').Sequence} */
+		const join = { type: 'Sequence', children: [] };
 
-			if (width > 80) {
-				chunks.push(c('{\n\t'));
-				push_array(chunks, join(specifiers, c(',\n\t')));
-				chunks.push(c('\n}'));
+		/** @type {import('./types').Sequence} */
+		const close = { type: 'Sequence', children: [] };
+
+		state.commands.push('{', open);
+
+		let first = true;
+		let width = 9;
+
+		for (const s of node.specifiers) {
+			if (!first) state.commands.push(join);
+			first = false;
+
+			if (s.local.name === s.exported.name) {
+				handle(s.local, state);
+				width += s.local.name.length;
 			} else {
-				chunks.push(c('{ '));
-				push_array(chunks, join(specifiers, c(', ')));
-				chunks.push(c(' }'));
-			}
-
-			if (node.source) {
-				chunks.push(c(' from '));
-				push_array(chunks, handle(node.source, state));
+				handle(s.local, state);
+				state.commands.push(' as ');
+				handle(s.exported, state);
+				width += s.local.name.length + 4 + s.exported.name.length;
 			}
 		}
 
-		chunks.push(c(';'));
+		if (node.source) {
+			state.commands.push(' from ');
+			handle(node.source, state);
 
-		return chunks;
+			width += 8 + /** @type {string} */ (node.source.value).length;
+		}
+
+		const multiline = false; // TODO
+
+		if (multiline) {
+			state.multiline = true;
+
+			open.children.push('\n', { type: 'IndentChange', offset: 1 }, { type: 'Indent' });
+			join.children.push(',\n', { type: 'Indent' });
+			close.children.push('\n', { type: 'IndentChange', offset: -1 }, { type: 'Indent' });
+		} else {
+			open.children.push(' ');
+			join.children.push(', ');
+			close.children.push(' ');
+		}
+
+		state.commands.push(close, '};');
 	},
 
 	ExpressionStatement(node, state) {
@@ -840,7 +847,7 @@ const handlers = {
 	},
 
 	ImportDeclaration(node, state) {
-		const chunks = [c('import ')];
+		state.commands.push('import ');
 
 		const { length } = node.specifiers;
 		const source = handle(node.source, state);
@@ -850,16 +857,16 @@ const handlers = {
 
 			while (i < length) {
 				if (i > 0) {
-					chunks.push(c(', '));
+					state.commands.push(', ');
 				}
 
 				const specifier = node.specifiers[i];
 
 				if (specifier.type === 'ImportDefaultSpecifier') {
-					chunks.push(c(specifier.local.name, specifier));
+					state.commands.push(c(specifier.local.name, specifier));
 					i += 1;
 				} else if (specifier.type === 'ImportNamespaceSpecifier') {
-					chunks.push(c('* as ' + specifier.local.name, specifier));
+					state.commands.push(c('* as ' + specifier.local.name, specifier));
 					i += 1;
 				} else {
 					break;
@@ -904,8 +911,6 @@ const handlers = {
 
 		push_array(chunks, source);
 		chunks.push(c(';'));
-
-		return chunks;
 	},
 
 	ImportExpression(node, state) {
@@ -1132,12 +1137,14 @@ const handlers = {
 	},
 
 	Property(node, state) {
+		const value = node.value.type === 'AssignmentPattern' ? node.value.left : node.value;
+
 		const shorthand =
 			!node.computed &&
 			node.kind === 'init' &&
 			node.key.type === 'Identifier' &&
-			node.value.type === 'Identifier' &&
-			node.key.name === node.value.name;
+			value.type === 'Identifier' &&
+			node.key.name === value.name;
 
 		if (shorthand) {
 			handle(node.value, state);
@@ -1324,11 +1331,17 @@ const handlers = {
 	},
 
 	WhileStatement(node, state) {
-		return [c('while ('), ...handle(node.test, state), c(') '), ...handle(node.body, state)];
+		state.commands.push('while (');
+		handle(node.test, state);
+		state.commands.push(') ');
+		handle(node.body, state);
 	},
 
 	WithStatement(node, state) {
-		return [c('with ('), ...handle(node.object, state), c(') '), ...handle(node.body, state)];
+		state.commands.push('with (');
+		handle(node.object, state);
+		state.commands.push(') ');
+		handle(node.body, state);
 	},
 
 	YieldExpression(node, state) {
