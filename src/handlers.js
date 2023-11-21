@@ -1190,20 +1190,28 @@ const handlers = {
 				node.argument.leadingComments.some(
 					(/** @type {any} */ comment) => comment.has_trailing_newline
 				);
-			return [
-				c(contains_comment ? 'return (' : 'return '),
-				...handle(node.argument, state),
-				c(contains_comment ? ');' : ';')
-			];
+
+			state.commands.push(contains_comment ? 'return (' : 'return ');
+			handle(node.argument, state);
+			state.commands.push(contains_comment ? ');' : ';');
 		} else {
-			return [c('return;')];
+			state.commands.push('return;');
 		}
 	},
 
 	SequenceExpression(node, state) {
-		const expressions = node.expressions.map((e) => handle(e, state));
+		state.commands.push('(');
 
-		return [c('('), ...join(expressions, c(', ')), c(')')];
+		let first = true;
+
+		for (const e of node.expressions) {
+			if (!first) state.commands.push(', ');
+			first = false;
+
+			handle(e, state);
+		}
+
+		state.commands.push(')');
 	},
 
 	SpreadElement: shared['RestElement|SpreadElement'],
@@ -1267,54 +1275,57 @@ const handlers = {
 	},
 
 	ThrowStatement(node, state) {
-		return [c('throw '), ...handle(node.argument, state), c(';')];
+		state.commands.push('throw ');
+		handle(node.argument, state);
+		state.commands.push(';');
 	},
 
 	TryStatement(node, state) {
-		const chunks = [c('try '), ...handle(node.block, state)];
+		state.commands.push('try ');
+		handle(node.block, state);
 
 		if (node.handler) {
 			if (node.handler.param) {
-				chunks.push(c(' catch('));
-				push_array(chunks, handle(node.handler.param, state));
-				chunks.push(c(') '));
+				state.commands.push(' catch(');
+				handle(node.handler.param, state);
+				state.commands.push(') ');
 			} else {
-				chunks.push(c(' catch '));
+				state.commands.push(' catch ');
 			}
 
-			push_array(chunks, handle(node.handler.body, state));
+			handle(node.handler.body, state);
 		}
 
 		if (node.finalizer) {
-			chunks.push(c(' finally '));
-			push_array(chunks, handle(node.finalizer, state));
+			state.commands.push(' finally ');
+			handle(node.finalizer, state);
 		}
-
-		return chunks;
 	},
 
 	UnaryExpression(node, state) {
-		const chunks = [c(node.operator)];
+		state.commands.push(node.operator);
 
 		if (node.operator.length > 1) {
-			chunks.push(c(' '));
+			state.commands.push(c(' '));
 		}
 
 		if (EXPRESSIONS_PRECEDENCE[node.argument.type] < EXPRESSIONS_PRECEDENCE.UnaryExpression) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.argument, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.argument, state);
+			state.commands.push(')');
 		} else {
-			push_array(chunks, handle(node.argument, state));
+			handle(node.argument, state);
 		}
-
-		return chunks;
 	},
 
 	UpdateExpression(node, state) {
-		return node.prefix
-			? [c(node.operator), ...handle(node.argument, state)]
-			: [...handle(node.argument, state), c(node.operator)];
+		if (node.prefix) {
+			state.commands.push(node.operator);
+			handle(node.argument, state);
+		} else {
+			handle(node.argument, state);
+			state.commands.push(node.operator);
+		}
 	},
 
 	VariableDeclaration(node, state) {
