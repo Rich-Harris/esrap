@@ -11,6 +11,14 @@ const indent = { type: 'Indent' };
 const dedent = { type: 'Dedent' };
 
 /**
+ * @param {import('./types').Command[]} children
+ * @returns {import('./types').Sequence}
+ */
+function sequence(...children) {
+	return { type: 'Sequence', children };
+}
+
+/**
  * Does `array.push` for all `items`. Needed because `array.push(...items)` throws
  * "Maximum call stack size exceeded" when `items` is too big of an array.
  *
@@ -261,8 +269,7 @@ const grouped_expression_types = [
  * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
-	/** @type {import('./types').Sequence} */
-	const join = { type: 'Sequence', children: [newline] };
+	const join = sequence(newline);
 
 	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
 	let first = true;
@@ -271,14 +278,10 @@ const handle_body = (nodes, state) => {
 	for (const statement of nodes) {
 		if (statement.type === 'EmptyStatement') continue;
 
-		/** @type {import('./types').Sequence} */
-		const margin = { type: 'Sequence', children: [] };
+		const margin = sequence();
 
-		if (first) {
-			first = false;
-		} else {
-			state.commands.push(margin, join);
-		}
+		if (!first) state.commands.push(margin, join);
+		first = false;
 
 		const leadingComments = statement.leadingComments;
 		delete statement.leadingComments;
@@ -349,14 +352,9 @@ const shared = {
 
 		const child_state = { ...state, multiline: false };
 
-		/** @type {import('./types').Sequence} */
-		const open = { type: 'Sequence', children: [] };
-
-		/** @type {import('./types').Sequence} */
-		const join = { type: 'Sequence', children: [] };
-
-		/** @type {import('./types').Sequence} */
-		const close = { type: 'Sequence', children: [] };
+		const open = sequence();
+		const join = sequence();
+		const close = sequence();
 
 		state.commands.push('[', open);
 
@@ -743,14 +741,9 @@ const handlers = {
 			return;
 		}
 
-		/** @type {import('./types').Sequence} */
-		const open = { type: 'Sequence', children: [] };
-
-		/** @type {import('./types').Sequence} */
-		const join = { type: 'Sequence', children: [] };
-
-		/** @type {import('./types').Sequence} */
-		const close = { type: 'Sequence', children: [] };
+		const open = sequence();
+		const join = sequence();
+		const close = sequence();
 
 		state.commands.push('{', open);
 
@@ -1056,10 +1049,6 @@ const handlers = {
 			state.commands.push('{}');
 			return;
 		}
-
-		let has_inline_comment = false;
-
-		const separator = c(', ');
 
 		state.commands.push('{ ');
 
