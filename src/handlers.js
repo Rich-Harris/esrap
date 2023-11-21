@@ -963,7 +963,9 @@ const handlers = {
 	},
 
 	MetaProperty(node, state) {
-		return [...handle(node.meta, state), c('.'), ...handle(node.property, state)];
+		handle(node.meta, state);
+		state.commands.push('.');
+		handle(node.property, state);
 	},
 
 	MethodDefinition(node, state) {
@@ -1219,46 +1221,45 @@ const handlers = {
 	},
 
 	SwitchStatement(node, state) {
-		const chunks = [c('switch ('), ...handle(node.discriminant, state), c(') {')];
+		state.commands.push('switch (');
+		handle(node.discriminant, state);
+		state.commands.push(') {', { type: 'IndentChange', offset: 1 });
 
-		node.cases.forEach((block) => {
+		for (const block of node.cases) {
 			if (block.test) {
-				chunks.push(c(`\n${state.indent}\tcase `));
-				push_array(chunks, handle(block.test, { ...state, indent: `${state.indent}\t` }));
-				chunks.push(c(':'));
+				state.commands.push(`case `);
+				handle(block.test, state);
+				state.commands.push(c(':'));
 			} else {
-				chunks.push(c(`\n${state.indent}\tdefault:`));
+				state.commands.push(`default:`);
 			}
 
-			block.consequent.forEach((statement) => {
-				chunks.push(c(`\n${state.indent}\t\t`));
-				push_array(chunks, handle(statement, { ...state, indent: `${state.indent}\t\t` }));
-			});
-		});
+			for (const statement of block.consequent) {
+				// state.commands.push((`\n${state.indent}\t\t`));
+				handle(statement, state);
+			}
+		}
 
-		chunks.push(c(`\n${state.indent}}`));
-
-		return chunks;
+		state.commands.push({ type: 'IndentChange', offset: -1 }, `\n}`);
 	},
 
 	TaggedTemplateExpression(node, state) {
-		return handle(node.tag, state).concat(handle(node.quasi, state));
+		handle(node.tag, state);
+		handle(node.quasi, state);
 	},
 
 	TemplateLiteral(node, state) {
-		const chunks = [c('`')];
+		state.commands.push('`');
 
 		const { quasis, expressions } = node;
 
 		for (let i = 0; i < expressions.length; i++) {
-			chunks.push(c(quasis[i].value.raw), c('${'));
-			push_array(chunks, handle(expressions[i], state));
-			chunks.push(c('}'));
+			state.commands.push(quasis[i].value.raw, '${');
+			handle(expressions[i], state);
+			state.commands.push('}');
 		}
 
-		chunks.push(c(quasis[quasis.length - 1].value.raw), c('`'));
-
-		return chunks;
+		state.commands.push(quasis[quasis.length - 1].value.raw, '`');
 	},
 
 	ThisExpression(node, state) {
@@ -1348,8 +1349,8 @@ const handlers = {
 		if (node.argument) {
 			state.commands.push(node.delegate ? `yield* ` : `yield `);
 			handle(node.argument, state);
+		} else {
+			state.commands.push(node.delegate ? `yield*` : `yield`);
 		}
-
-		state.commands.push(node.delegate ? `yield*` : `yield`);
 	}
 };
