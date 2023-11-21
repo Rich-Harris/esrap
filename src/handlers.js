@@ -26,7 +26,7 @@ export function handle(node, state) {
 	}
 
 	if (node.leadingComments) {
-		prepend_comments(state.commands, node.leadingComments, state);
+		prepend_comments(node.leadingComments, state);
 	}
 
 	// @ts-expect-error
@@ -51,12 +51,11 @@ function c(content, node) {
 }
 
 /**
- * @param {import('./types').Command[]} commands
  * @param {import('estree').Comment[]} comments
  * @param {import('./types').State} state
  */
-function prepend_comments(commands, comments, state) {
-	commands.push(
+function prepend_comments(comments, state) {
+	state.commands.push(
 		c(
 			comments
 				.map((comment) =>
@@ -276,7 +275,7 @@ const handle_body = (nodes, state) => {
 		delete statement.leadingComments;
 
 		if (leadingComments && leadingComments.length > 0) {
-			prepend_comments(state.commands, leadingComments, state);
+			prepend_comments(leadingComments, state);
 		}
 
 		const child_state = { ...state, multiline: false };
@@ -1067,47 +1066,47 @@ const handlers = {
 
 		return;
 
-		node.properties.forEach((p, i) => {
-			handle(p, state);
+		// node.properties.forEach((p, i) => {
+		// 	handle(p, state);
 
-			if (state.comments.length) {
-				// TODO generalise this, so it works with ArrayExpressions and other things.
-				// At present, stuff will just get appended to the closest statement/declaration
-				chunks.push(c(', '));
+		// 	if (state.comments.length) {
+		// 		// TODO generalise this, so it works with ArrayExpressions and other things.
+		// 		// At present, stuff will just get appended to the closest statement/declaration
+		// 		chunks.push(c(', '));
 
-				while (state.comments.length) {
-					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+		// 		while (state.comments.length) {
+		// 			const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
 
-					chunks.push(
-						c(
-							comment.type === 'Block'
-								? `/*${comment.value}*/\n${state.indent}\t`
-								: `//${comment.value}\n${state.indent}\t`
-						)
-					);
+		// 			chunks.push(
+		// 				c(
+		// 					comment.type === 'Block'
+		// 						? `/*${comment.value}*/\n${state.indent}\t`
+		// 						: `//${comment.value}\n${state.indent}\t`
+		// 				)
+		// 			);
 
-					if (comment.type === 'Line') {
-						has_inline_comment = true;
-					}
-				}
-			} else {
-				if (i < node.properties.length - 1) {
-					chunks.push(separator);
-				}
-			}
-		});
+		// 			if (comment.type === 'Line') {
+		// 				has_inline_comment = true;
+		// 			}
+		// 		}
+		// 	} else {
+		// 		if (i < node.properties.length - 1) {
+		// 			chunks.push(separator);
+		// 		}
+		// 	}
+		// });
 
-		const multiple_lines = has_inline_comment || has_newline(chunks) || get_length(chunks) > 40;
+		// const multiple_lines = has_inline_comment || has_newline(chunks) || get_length(chunks) > 40;
 
-		if (multiple_lines) {
-			separator.content = `,\n${state.indent}\t`;
-		}
+		// if (multiple_lines) {
+		// 	separator.content = `,\n${state.indent}\t`;
+		// }
 
-		return [
-			c(multiple_lines ? `{\n${state.indent}\t` : `{ `),
-			...chunks,
-			c(multiple_lines ? `\n${state.indent}}` : ` }`)
-		];
+		// return [
+		// 	c(multiple_lines ? `{\n${state.indent}\t` : `{ `),
+		// 	...chunks,
+		// 	c(multiple_lines ? `\n${state.indent}}` : ` }`)
+		// ];
 	},
 
 	ObjectPattern(node, state) {
