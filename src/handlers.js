@@ -455,22 +455,20 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'ClassDeclaration|ClassExpression': (node, state) => {
-		const chunks = [c('class ')];
+		state.commands.push('class ');
 
 		if (node.id) {
-			push_array(chunks, handle(node.id, state));
-			chunks.push(c(' '));
+			handle(node.id, state);
+			state.commands.push(' ');
 		}
 
 		if (node.superClass) {
-			chunks.push(c('extends '));
-			push_array(chunks, handle(node.superClass, state));
-			chunks.push(c(' '));
+			state.commands.push('extends ');
+			handle(node.superClass, state);
+			state.commands.push(' ');
 		}
 
-		push_array(chunks, handle(node.body, state));
-
-		return chunks;
+		handle(node.body, state);
 	},
 
 	/**
@@ -1153,27 +1151,25 @@ const handlers = {
 	},
 
 	PropertyDefinition(node, state) {
-		const chunks = [];
-
 		if (node.static) {
-			chunks.push(c('static '));
+			state.commands.push('static ');
 		}
 
 		if (node.computed) {
-			chunks.push(c('['), ...handle(node.key, state), c(']'));
+			state.commands.push('[');
+			handle(node.key, state);
+			state.commands.push(']');
 		} else {
-			chunks.push(...handle(node.key, state));
+			handle(node.key, state);
 		}
 
 		if (node.value) {
-			chunks.push(c(' = '));
+			state.commands.push(' = ');
 
-			chunks.push(...handle(node.value, state));
+			handle(node.value, state);
 		}
 
-		chunks.push(c(';'));
-
-		return chunks;
+		state.commands.push(';');
 	},
 
 	RestElement: shared['RestElement|SpreadElement'],
@@ -1204,12 +1200,11 @@ const handlers = {
 	SpreadElement: shared['RestElement|SpreadElement'],
 
 	StaticBlock(node, state) {
-		return [
-			c('static '),
-			c(`{\n${state.indent}\t`),
-			...handle_body(node.body, { ...state, indent: state.indent + '\t' }),
-			c(`\n${state.indent}}`)
-		];
+		state.commands.push('static {\n', { type: 'IndentChange', offset: 1 }, { type: 'Indent' });
+
+		handle_body(node.body, state);
+
+		state.commands.push({ type: 'IndentChange', offset: -1 }, '\n', { type: 'Indent' }, '}');
 	},
 
 	Super(node, state) {
@@ -1260,7 +1255,7 @@ const handlers = {
 	},
 
 	ThisExpression(node, state) {
-		return [c('this', node)];
+		state.commands.push(c('this', node));
 	},
 
 	ThrowStatement(node, state) {
