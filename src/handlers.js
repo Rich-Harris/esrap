@@ -1138,7 +1138,7 @@ const handlers = {
 			state.commands.push(dedent);
 		}
 
-		state.commands.push(dedent, `\n}`);
+		state.commands.push(dedent, newline, `}`);
 	},
 
 	TaggedTemplateExpression(node, state) {
