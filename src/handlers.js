@@ -764,10 +764,9 @@ const handlers = {
 
 		state.commands.push('{');
 		sequence(node.specifiers, state, true, (s, state) => {
-			if (s.local.name === s.exported.name) {
-				handle(s.local, state);
-			} else {
-				handle(s.local, state);
+			handle(s.local, state);
+
+			if (s.local.name !== s.exported.name) {
 				state.commands.push(' as ');
 				handle(s.exported, state);
 			}
@@ -870,8 +869,6 @@ const handlers = {
 			}
 		}
 
-		const index = state.commands.length;
-
 		state.commands.push('import ');
 
 		if (namespace_specifier) {
@@ -887,11 +884,12 @@ const handlers = {
 
 			state.commands.push('{');
 			sequence(named_specifiers, state, true, (s, state) => {
-				if (s.local.name === s.imported.name) {
-					state.commands.push(c(s.local.name, s.local));
-				} else {
-					state.commands.push(c(s.imported.name, s.imported), ' as ', c(s.local.name, s.local));
+				if (s.local.name !== s.imported.name) {
+					handle(s.imported, state);
+					state.commands.push(' as ');
 				}
+
+				handle(s.local, state);
 			});
 			state.commands.push('}');
 		}
