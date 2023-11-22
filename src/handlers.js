@@ -1050,17 +1050,59 @@ const handlers = {
 			return;
 		}
 
-		state.commands.push('{ ');
+		const open = sequence();
+		const join = sequence();
+		const close = sequence();
+
+		state.commands.push('{', open);
+
+		const child_state = { ...state, multiline: false };
 
 		let first = true;
 		for (const p of node.properties) {
-			if (!first) state.commands.push(', ');
+			if (!first) state.commands.push(join);
 			first = false;
 
-			handle(p, state);
+			if (p.type === 'Property' && p.method) {
+				const fn = /** @type {import('estree').FunctionExpression} */ (p.value);
+
+				if (fn.async) state.commands.push('async ');
+				if (fn.generator) state.commands.push('*');
+
+				if (p.computed) state.commands.push('[');
+				handle(p.key, child_state);
+				if (p.computed) state.commands.push(']');
+				state.commands.push('(');
+
+				let first = true;
+
+				for (const param of fn.params) {
+					if (!first) state.commands.push(', ');
+					first = false;
+
+					handle(param, child_state);
+				}
+
+				state.commands.push(') ');
+				handle(fn.body, child_state);
+			} else {
+				handle(p, child_state);
+			}
 		}
 
-		state.commands.push(' }');
+		state.commands.push(close, '}');
+
+		if (child_state.multiline) {
+			state.multiline = true;
+
+			open.children.push(indent, newline);
+			join.children.push(',', newline);
+			close.children.push(dedent, newline);
+		} else {
+			open.children.push(' ');
+			join.children.push(', ');
+			close.children.push(' ');
+		}
 
 		return;
 
