@@ -309,7 +309,8 @@ const handle_var_declaration = (node, state) => {
 		handle(d, child_state);
 	}
 
-	const multiline = child_state.multiline || measure(state.commands, index) > 50;
+	const multiline =
+		child_state.multiline || (node.declarations.length > 1 && measure(state.commands, index) > 50);
 
 	if (multiline) {
 		state.multiline = true;
