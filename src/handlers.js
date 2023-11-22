@@ -324,7 +324,7 @@ const handle_var_declaration = (node, state) => {
 
 /**
  * @template {import('estree').Node} T
- * @param {T[]} nodes
+ * @param {Array<T | null>} nodes
  * @param {import('./types').State} state
  * @param {boolean} spaces
  * @param {(node: T, state: import('./types').State) => void} fn
@@ -342,8 +342,17 @@ function sequence(nodes, state, spaces, fn) {
 
 	const child_state = { ...state, multiline: false };
 
+	let first = true;
+
+	// This is only used for ArrayPattern and ArrayExpression, but
+	// it makes more sense to have the logic here than there, because
+	// otherwise we'd duplicate a lot more stuff
+	let sparse_commas = '';
+
 	for (let i = 0; i < nodes.length; i += 1) {
-		if (i > 0) {
+		const node = nodes[i];
+
+		if (!first) {
 			if (state.comments.length > 0) {
 				state.commands.push(', ');
 
@@ -358,9 +367,20 @@ function sequence(nodes, state, spaces, fn) {
 			}
 		}
 
-		fn(nodes[i], child_state);
+		if (node) {
+			if (sparse_commas) state.commands.push(sparse_commas);
+			sparse_commas = '';
+		} else {
+			sparse_commas += ',';
+		}
+
+		if (node) {
+			fn(node, child_state);
+			first = false;
+		}
 	}
 
+	if (sparse_commas) state.commands.push(sparse_commas);
 	state.commands.push(close);
 
 	const multiline = child_state.multiline || measure(state.commands, index) > 50;
@@ -384,51 +404,8 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'ArrayExpression|ArrayPattern': (node, state) => {
-		if (node.elements.length === 0) {
-			state.commands.push('[]');
-			return;
-		}
-
-		const child_state = { ...state, multiline: false };
-
-		const open = create_sequence();
-		const join = create_sequence();
-		const close = create_sequence();
-
-		state.commands.push('[', open);
-
-		let sparse_commas = '';
-
-		for (let i = 0; i < node.elements.length; i += 1) {
-			const element = node.elements[i];
-			if (element) {
-				state.commands.push(sparse_commas);
-
-				if (i > 0) {
-					state.commands.push(join);
-				}
-
-				handle(element, child_state);
-				sparse_commas = '';
-			} else {
-				sparse_commas += ',';
-			}
-		}
-
-		state.commands.push(sparse_commas, close);
-
-		const multiline = child_state.multiline || node.elements.length > 3; // TODO
-
-		if (multiline) {
-			state.multiline = true;
-
-			open.children.push(indent, newline);
-			join.children.push(',', newline);
-			close.children.push(dedent, newline);
-		} else {
-			join.children.push(', ');
-		}
-
+		state.commands.push('[');
+		sequence(/** @type {import('estree').Node[]} */ (node.elements), state, false, handle);
 		state.commands.push(']');
 	},
 
