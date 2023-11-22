@@ -440,6 +440,70 @@ const shared = {
 	},
 
 	/**
+	 * @param {import('estree').CallExpression | import('estree').NewExpression} node
+	 * @param {import('./types').State} state
+	 */
+	'CallExpression|NewExpression': (node, state) => {
+		const index = state.commands.length;
+
+		if (node.type === 'NewExpression') {
+			state.commands.push('new ');
+		}
+
+		const needs_parens =
+			EXPRESSIONS_PRECEDENCE[node.callee.type] < EXPRESSIONS_PRECEDENCE.CallExpression ||
+			has_call_expression(node.callee);
+
+		if (needs_parens) {
+			state.commands.push('(');
+			handle(node.callee, state);
+			state.commands.push(')');
+		} else {
+			handle(node.callee, state);
+		}
+
+		if (node.type === 'NewExpression' && node.arguments.length === 0) return;
+
+		if (/** @type {import('estree').SimpleCallExpression} */ (node).optional) {
+			state.commands.push('?.');
+		}
+
+		const open = sequence();
+		const join = sequence();
+		const close = sequence();
+
+		state.commands.push('(', open);
+
+		// if the final argument is multiline, it doesn't need to force all the
+		// other arguments to also be multiline
+		const child_state = { ...state, multiline: false };
+		const final_state = { ...state, multiline: false };
+
+		for (let i = 0; i < node.arguments.length; i += 1) {
+			if (i > 0) state.commands.push(join);
+			const p = node.arguments[i];
+
+			handle(p, i === node.arguments.length - 1 ? final_state : child_state);
+		}
+
+		state.commands.push(close, ')');
+
+		const multiline = child_state.multiline || measure(state.commands, index) > 50;
+
+		if (multiline || final_state.multiline) {
+			state.multiline = true;
+		}
+
+		if (multiline) {
+			open.children.push(indent, newline);
+			join.children.push(',', newline);
+			close.children.push(dedent, newline);
+		} else {
+			join.children.push(', ');
+		}
+	},
+
+	/**
 	 * @param {import('estree').ClassDeclaration | import('estree').ClassExpression} node
 	 * @param {import('./types').State} state
 	 */
@@ -597,31 +661,7 @@ const handlers = {
 		}
 	},
 
-	CallExpression(node, state) {
-		if (EXPRESSIONS_PRECEDENCE[node.callee.type] < EXPRESSIONS_PRECEDENCE.CallExpression) {
-			state.commands.push('(');
-			handle(node.callee, state);
-			state.commands.push(')');
-		} else {
-			handle(node.callee, state);
-		}
-
-		if (/** @type {import('estree').SimpleCallExpression} */ (node).optional) {
-			state.commands.push('?.');
-		}
-
-		state.commands.push('(');
-
-		let first = true;
-		for (const p of node.arguments) {
-			if (!first) state.commands.push(', ');
-			first = false;
-
-			handle(p, state);
-		}
-
-		state.commands.push(')');
-	},
+	CallExpression: shared['CallExpression|NewExpression'],
 
 	ChainExpression(node, state) {
 		return handle(node.expression, state);
@@ -1000,34 +1040,7 @@ const handlers = {
 		handle(node.value.body, state);
 	},
 
-	NewExpression(node, state) {
-		state.commands.push('new ');
-
-		if (
-			EXPRESSIONS_PRECEDENCE[node.callee.type] < EXPRESSIONS_PRECEDENCE.CallExpression ||
-			has_call_expression(node.callee)
-		) {
-			state.commands.push('(');
-			handle(node.callee, state);
-			state.commands.push(')');
-		} else {
-			handle(node.callee, state);
-		}
-
-		state.commands.push('(');
-
-		let first = true;
-
-		// TODO handle multiline
-		for (const a of node.arguments) {
-			if (!first) state.commands.push(', ');
-			first = false;
-
-			handle(a, state);
-		}
-
-		state.commands.push(')');
-	},
+	NewExpression: shared['CallExpression|NewExpression'],
 
 	ObjectExpression(node, state) {
 		const index = state.commands.length;
