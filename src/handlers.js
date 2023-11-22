@@ -391,6 +391,7 @@ function sequence(nodes, state, spaces, fn) {
 	}
 }
 
+/** @satisfies {Record<string, (node: any, state: import('./types').State) => undefined>} */
 const shared = {
 	/**
 	 * @param {import('estree').ArrayExpression | import('estree').ArrayPattern} node
@@ -689,7 +690,7 @@ const handlers = {
 	CallExpression: shared['CallExpression|NewExpression'],
 
 	ChainExpression(node, state) {
-		return handle(node.expression, state);
+		handle(node.expression, state);
 	},
 
 	ClassBody: shared['BlockStatement|ClassBody'],
@@ -1057,7 +1058,7 @@ const handlers = {
 	},
 
 	Program(node, state) {
-		return handle_body(node.body, state);
+		handle_body(node.body, state);
 	},
 
 	Property(node, state) {
