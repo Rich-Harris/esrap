@@ -960,16 +960,11 @@ const handlers = {
 	},
 
 	Literal(node, state) {
-		let value;
-
-		if (typeof node.value === 'string') {
-			// TODO do we need to handle weird unicode characters somehow?
-			// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
-			value = node.raw ?? JSON.stringify(node.value);
-			if (/\n/.test(value)) state.multiline = true;
-		} else {
-			value = node.raw ?? String(node.value);
-		}
+		// TODO do we need to handle weird unicode characters somehow?
+		// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
+		const value =
+			node.raw ??
+			(typeof node.value === 'string' ? JSON.stringify(node.value) : String(node.value));
 
 		state.commands.push(c(value, node));
 	},
