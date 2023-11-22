@@ -37,12 +37,7 @@ function load(input) {
 
 			while (comments[0] && comments[0].start < node.start) {
 				comment = comments.shift();
-
-				const next = comments[0] || node;
-				comment.has_trailing_newline =
-					comment.type === 'Line' || /\n/.test(input.slice(comment.end, next.start));
-
-				(node.leadingComments || (node.leadingComments = [])).push(comment);
+				(node.leadingComments ??= []).push(comment);
 			}
 
 			next();

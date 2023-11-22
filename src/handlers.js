@@ -50,7 +50,7 @@ export function handle(node, state) {
 	}
 
 	if (node.leadingComments) {
-		prepend_comments(node.leadingComments, state);
+		prepend_comments(node.leadingComments, state, false);
 	}
 
 	// @ts-expect-error
@@ -77,13 +77,13 @@ function c(content, node) {
 /**
  * @param {import('estree').Comment[]} comments
  * @param {import('./types').State} state
+ * @param {boolean} newlines
  */
-function prepend_comments(comments, state) {
+function prepend_comments(comments, state, newlines) {
 	for (const comment of comments) {
 		state.commands.push({ type: 'Comment', comment });
 
-		// @ts-expect-error TODO this is non-standard and weird
-		if (comment.has_trailing_newline) {
+		if (newlines || comment.type === 'Line' || /\n/.test(comment.value)) {
 			state.commands.push(newline);
 		} else {
 			state.commands.push(' ');
@@ -250,7 +250,7 @@ const handle_body = (nodes, state) => {
 		delete statement.leadingComments;
 
 		if (leadingComments && leadingComments.length > 0) {
-			prepend_comments(leadingComments, state);
+			prepend_comments(leadingComments, state, true);
 		}
 
 		const child_state = { ...state, multiline: false };
@@ -1122,9 +1122,7 @@ const handlers = {
 		if (node.argument) {
 			const contains_comment =
 				node.argument.leadingComments &&
-				node.argument.leadingComments.some(
-					(/** @type {any} */ comment) => comment.has_trailing_newline
-				);
+				node.argument.leadingComments.some((comment) => comment.type === 'Line');
 
 			state.commands.push(contains_comment ? 'return (' : 'return ');
 			handle(node.argument, state);

@@ -3064,8 +3064,7 @@
 						"catch"(fn) {
 							return promise.then(null, fn);
 						},
-						pipe() /* fnDone, fnFail, fnProgress */
-						{
+						pipe() /* fnDone, fnFail, fnProgress */ {
 							var fns = arguments;
 
 							return jQuery.Deferred(function (newDefer) {
