@@ -1094,16 +1094,7 @@ const handlers = {
 
 	SequenceExpression(node, state) {
 		state.commands.push('(');
-
-		let first = true;
-
-		for (const e of node.expressions) {
-			if (!first) state.commands.push(', ');
-			first = false;
-
-			handle(e, state);
-		}
-
+		sequence(node.expressions, state, false, handle);
 		state.commands.push(')');
 	},
 
