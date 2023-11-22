@@ -349,38 +349,44 @@ function sequence(nodes, state, spaces, fn) {
 	// otherwise we'd duplicate a lot more stuff
 	let sparse_commas = '';
 
+	let prev;
+
 	for (let i = 0; i < nodes.length; i += 1) {
 		const node = nodes[i];
+		const is_first = i === 0;
+		const is_last = i === nodes.length - 1;
 
-		if (!first) {
+		if (node) {
+			if (!is_first && !prev) {
+				state.commands.push(join);
+			}
+
+			fn(node, child_state);
+
+			if (!is_last) {
+				state.commands.push(',');
+			}
+
 			if (state.comments.length > 0) {
-				state.commands.push(', ');
+				state.commands.push(' ');
 
 				while (state.comments.length) {
 					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-					state.commands.push({ type: 'Comment', comment }, newline);
+					state.commands.push({ type: 'Comment', comment });
+					if (!is_last) state.commands.push(join);
 				}
 
 				child_state.multiline = true;
 			} else {
-				state.commands.push(join);
+				if (!is_last) state.commands.push(join);
 			}
-		}
-
-		if (node) {
-			if (sparse_commas) state.commands.push(sparse_commas);
-			sparse_commas = '';
 		} else {
-			sparse_commas += ',';
+			state.commands.push(',');
 		}
 
-		if (node) {
-			fn(node, child_state);
-			first = false;
-		}
+		prev = node;
 	}
 
-	if (sparse_commas) state.commands.push(sparse_commas);
 	state.commands.push(close);
 
 	const multiline = child_state.multiline || measure(state.commands, index) > 50;
@@ -389,11 +395,11 @@ function sequence(nodes, state, spaces, fn) {
 		state.multiline = true;
 
 		open.children.push(indent, newline);
-		join.children.push(',', newline);
+		join.children.push(newline);
 		close.children.push(dedent, newline);
 	} else {
 		if (spaces) open.children.push(' ');
-		join.children.push(', ');
+		join.children.push(' ');
 		if (spaces) close.children.push(' ');
 	}
 }

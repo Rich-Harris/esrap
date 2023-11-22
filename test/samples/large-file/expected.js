@@ -1583,13 +1583,7 @@
 
 						// But maintain support for old signatures
 						if (fn.length > 1) {
-							args = [
-								pseudo,
-								pseudo,
-								"",
-								argument
-							];
-
+							args = [pseudo, pseudo, "", argument];
 							return Expr.setFilters.hasOwnProperty(pseudo.toLowerCase())
 								? markFunction(function (seed, matches) {
 									var idx,
@@ -2149,7 +2143,9 @@
 
 				for (; i < len; i++) {
 					if (matcher = Expr.relative[tokens[i].type]) {
-						matchers = [addCombinator(elementMatcher(matchers), matcher)];
+						matchers = [
+							addCombinator(elementMatcher(matchers), matcher)
+						];
 					} else {
 						matcher = Expr.filter[tokens[i].type].apply(null, tokens[i].matches);
 
@@ -2297,11 +2293,14 @@
 				return bySet ? markFunction(superMatcher) : superMatcher;
 			}
 
-			function compile(selector, match) {
+			function compile(
+				selector,
+				match /* Internal Use Only */
+			) {
 				var i,
 					setMatchers = [],
 					elementMatchers = [],
-					cached = compilerCache[selector + " "]; /* Internal Use Only */
+					cached = compilerCache[selector + " "];
 
 				if (!cached) {
 					// Generate a function of recursive functions that can be used to check each element
@@ -3926,14 +3925,7 @@
 
 		var pnum = (/[+-]?(?:\d*\.|)\d+(?:[eE][+-]?\d+|)/).source;
 		var rcssNum = new RegExp("^(?:([+-])=|)(" + pnum + ")([a-z%]*)$", "i");
-
-		var cssExpand = [
-			"Top",
-			"Right",
-			"Bottom",
-			"Left"
-		];
-
+		var cssExpand = ["Top", "Right", "Bottom", "Left"];
 		var documentElement = document.documentElement;
 
 		var isAttached = function (elem) {
@@ -4156,9 +4148,17 @@
 			// same way that tag soup parsers do. So we cannot shorten
 			// this by omitting <tbody> or other required elements.
 			thead: [1, "<table>", "</table>"],
-			col: [2, "<table><colgroup>", "</colgroup></table>"],
+			col: [
+				2,
+				"<table><colgroup>",
+				"</colgroup></table>"
+			],
 			tr: [2, "<table><tbody>", "</tbody></table>"],
-			td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+			td: [
+				3,
+				"<table><tbody><tr>",
+				"</tr></tbody></table>"
+			],
 			_default: [0, "", ""]
 		};
 
@@ -4167,7 +4167,11 @@
 
 		// Support: IE <=9 only
 		if (!support.option) {
-			wrapMap.optgroup = wrapMap.option = [1, "<select multiple='multiple'>", "</select>"];
+			wrapMap.optgroup = wrapMap.option = [
+				1,
+				"<select multiple='multiple'>",
+				"</select>"
+			];
 		}
 
 		function getAll(context, tag) {
@@ -4201,7 +4205,13 @@
 
 		var rhtml = /<|&#?\w+;/;
 
-		function buildFragment(elems, context, scripts, selection, ignored) {
+		function buildFragment(
+			elems,
+			context,
+			scripts,
+			selection,
+			ignored
+		) {
 			var elem,
 				tmp,
 				tag,
@@ -6563,7 +6573,12 @@
 				// Record all 3 overflow attributes because IE does not infer the shorthand
 				// from identically-valued overflowX and overflowY and Edge just mirrors
 				// the overflowX value there.
-				opts.overflow = [style.overflow, style.overflowX, style.overflowY];
+				opts.overflow = [
+					style.overflow,
+					style.overflowX,
+					style.overflowY
+				];
+
 				// Identify a display type, preferring old show/hide data over the CSS cascade
 				restoreDisplay = dataShow && dataShow.display;
 
@@ -8634,7 +8649,12 @@
 				}
 
 				// Callback for when everything is done
-				function done(status, nativeStatusText, responses, headers) {
+				function done(
+					status,
+					nativeStatusText,
+					responses,
+					headers
+				) {
 					var isSuccess,
 						success,
 						error,

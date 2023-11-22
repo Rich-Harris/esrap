@@ -125,13 +125,14 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		}
 
 		const { code, map } = print(ast, opts);
+
+		Bun.write(`${__dirname}/samples/${dir}/_actual.js`, code);
+		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
+
 		const parsed = parse(code, {
 			ecmaVersion: 'latest',
 			sourceType: input_json.size > 0 ? 'script' : 'module'
 		});
-
-		Bun.write(`${__dirname}/samples/${dir}/_actual.js`, code);
-		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
 
 		Bun.write(
 			`${__dirname}/samples/${dir}/_actual.json`,
