@@ -550,18 +550,39 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'FunctionDeclaration|FunctionExpression': (node, state) => {
+		const index = state.commands.length;
+
 		if (node.async) state.commands.push(c('async '));
 		state.commands.push(c(node.generator ? 'function* ' : 'function '));
 		if (node.id) handle(node.id, state);
-		state.commands.push(c('('));
 
-		for (const p of node.params) {
-			handle(p, state);
+		const open = sequence();
+		const join = sequence();
+		const close = sequence();
+
+		state.commands.push('(', open);
+
+		const child_state = { ...state, multiline: false };
+
+		for (let i = 0; i < node.params.length; i += 1) {
+			if (i > 0) state.commands.push(join);
+			handle(node.params[i], state);
 		}
 
-		const multiple_lines = false; // TODO params on multiple lines
+		state.commands.push(close, ') ');
 
-		state.commands.push(c(') '));
+		const multiline = child_state.multiline || measure(state.commands, index) > 50;
+
+		if (multiline) {
+			state.multiline = true;
+
+			open.children.push(indent, newline);
+			join.children.push(',', newline);
+			close.children.push(dedent, newline);
+		} else {
+			join.children.push(', ');
+		}
+
 		handle(node.body, state);
 	},
 
