@@ -82,7 +82,7 @@ function prepend_comments(comments, state) {
 	for (const comment of comments) {
 		state.commands.push(comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`);
 
-		// TODO this is non-standard and weird
+		// @ts-expect-error TODO this is non-standard and weird
 		if (comment.has_trailing_newline) {
 			state.commands.push(newline);
 		} else {
