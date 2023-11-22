@@ -60,6 +60,28 @@ function load(input) {
 	return /** @type {import('estree').Program} */ (ast);
 }
 
+/** @param {import('estree').Node} ast */
+function clean(ast) {
+	return walk(ast, null, {
+		_(node, context) {
+			delete node.loc;
+			delete node.start;
+			delete node.end;
+			delete node.leadingComments;
+			delete node.trailingComments;
+			context.next();
+		},
+		Program(node, context) {
+			node.body = node.body.filter((node) => node.type !== 'EmptyStatement');
+			context.next();
+		},
+		BlockStatement(node, context) {
+			node.body = node.body.filter((node) => node.type !== 'EmptyStatement');
+			context.next();
+		}
+	});
+}
+
 for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 	if (dir[0] === '.') continue;
 
@@ -86,14 +108,25 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		}
 
 		const { code, map } = print(ast, opts);
+		const parsed = parse(code, {
+			ecmaVersion: 'latest',
+			sourceType: input_json.size > 0 ? 'script' : 'module'
+		});
 
 		Bun.write(`${__dirname}/samples/${dir}/_actual.js`, code);
 		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
+
+		Bun.write(
+			`${__dirname}/samples/${dir}/_actual.json`,
+			JSON.stringify(parsed, (value) => (typeof value === 'bigint' ? Number(value) : value), '\t')
+		);
 
 		const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
 		expect(code.trim().replace(/^\t+$/gm, '')).toBe(expected.trim());
 
 		const expected_map = await Bun.file(`${__dirname}/samples/${dir}/expected.js.map`).json();
 		expect(map).toEqual(expected_map);
+
+		expect(clean(/** @type {import('estree').Node} */ (parsed))).toEqual(clean(ast));
 	});
 }
