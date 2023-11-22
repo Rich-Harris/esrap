@@ -1308,12 +1308,19 @@ const handlers = {
 		const { quasis, expressions } = node;
 
 		for (let i = 0; i < expressions.length; i++) {
-			state.commands.push(quasis[i].value.raw, '${');
+			const raw = quasis[i].value.raw;
+
+			state.commands.push(raw, '${');
 			handle(expressions[i], state);
 			state.commands.push('}');
+
+			if (/\n/.test(raw)) state.multiline = true;
 		}
 
-		state.commands.push(quasis[quasis.length - 1].value.raw, '`');
+		const raw = quasis[quasis.length - 1].value.raw;
+
+		state.commands.push(raw, '`');
+		if (/\n/.test(raw)) state.multiline = true;
 	},
 
 	ThisExpression(node, state) {
