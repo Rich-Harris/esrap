@@ -610,27 +610,9 @@ const handlers = {
 	ArrowFunctionExpression: (node, state) => {
 		if (node.async) state.commands.push('async ');
 
-		if (node.params.length === 1 && node.params[0].type === 'Identifier') {
-			handle(node.params[0], state);
-		} else {
-			state.commands.push('(');
-
-			let first = true;
-
-			for (const p of node.params) {
-				if (first) {
-					first = false;
-				} else {
-					state.commands.push(', ');
-				}
-
-				handle(p, state);
-			}
-
-			state.commands.push(')');
-		}
-
-		state.commands.push(' => ');
+		state.commands.push('(');
+		sequence(node.params, state, false, handle);
+		state.commands.push(') => ');
 
 		if (
 			node.body.type === 'ObjectExpression' ||
