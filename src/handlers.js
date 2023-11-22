@@ -526,8 +526,6 @@ const shared = {
 			handle(node.callee, state);
 		}
 
-		if (node.type === 'NewExpression' && node.arguments.length === 0) return;
-
 		if (/** @type {import('estree').SimpleCallExpression} */ (node).optional) {
 			state.commands.push('?.');
 		}
@@ -544,7 +542,29 @@ const shared = {
 		const final_state = { ...state, multiline: false };
 
 		for (let i = 0; i < node.arguments.length; i += 1) {
-			if (i > 0) state.commands.push(join);
+			if (i > 0) {
+				if (state.comments.length > 0) {
+					state.commands.push(', ');
+
+					while (state.comments.length) {
+						const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+
+						state.commands.push(
+							comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`
+						);
+
+						if (comment.type === 'Line') {
+							child_state.multiline = true;
+							state.commands.push(newline);
+						} else {
+							state.commands.push(' ');
+						}
+					}
+				} else {
+					state.commands.push(join);
+				}
+			}
+
 			const p = node.arguments[i];
 
 			handle(p, i === node.arguments.length - 1 ? final_state : child_state);
@@ -552,7 +572,7 @@ const shared = {
 
 		state.commands.push(close, ')');
 
-		const multiline = child_state.multiline || measure(state.commands, index) > 50;
+		const multiline = child_state.multiline || measure(state.commands, index) > 80;
 
 		if (multiline || final_state.multiline) {
 			state.multiline = true;
