@@ -63,7 +63,7 @@ export function handle(node, state) {
 
 /**
  * @param {string} content
- * @param {import('estree').Node} [node]
+ * @param {import('estree').Node} node
  * @returns {import('./types').Chunk}
  */
 function c(content, node) {
@@ -434,21 +434,6 @@ const shared = {
 			join.children.push(', ');
 		}
 
-		// const multiple_lines =
-		// 	elements.some(has_newline) ||
-		// 	elements.map(get_length).reduce(sum, 0) + (state.indent.length + elements.length - 1) * 2 >
-		// 		80;
-
-		// if (multiple_lines) {
-		// 	chunks.push(c(`\n${state.indent}\t`));
-		// 	push_array(chunks, join(elements, c(`,\n${state.indent}\t`)));
-		// 	chunks.push(c(`\n${state.indent}`));
-		// 	push_array(chunks, sparse_commas);
-		// } else {
-		// 	push_array(chunks, join(elements, c(', ')));
-		// 	push_array(chunks, sparse_commas);
-		// }
-
 		state.commands.push(']');
 	},
 
@@ -631,8 +616,8 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'FunctionDeclaration|FunctionExpression': (node, state) => {
-		if (node.async) state.commands.push(c('async '));
-		state.commands.push(c(node.generator ? 'function* ' : 'function '));
+		if (node.async) state.commands.push('async ');
+		state.commands.push(node.generator ? 'function* ' : 'function ');
 		if (node.id) handle(node.id, state);
 
 		state.commands.push('(');
@@ -659,7 +644,7 @@ const handlers = {
 	ArrayPattern: shared['ArrayExpression|ArrayPattern'],
 
 	ArrowFunctionExpression: (node, state) => {
-		if (node.async) state.commands.push(c('async '));
+		if (node.async) state.commands.push('async ');
 
 		if (node.params.length === 1 && node.params[0].type === 'Identifier') {
 			handle(node.params[0], state);
@@ -719,9 +704,9 @@ const handlers = {
 				state.commands.push('await ');
 				handle(node.argument, state);
 			}
+		} else {
+			state.commands.push('await');
 		}
-
-		return [c('await')];
 	},
 
 	BinaryExpression: shared['BinaryExpression|LogicalExpression'],
@@ -791,7 +776,7 @@ const handlers = {
 	},
 
 	DebuggerStatement(node, state) {
-		return [c('debugger', node), c(';')];
+		state.commands.push(c('debugger', node), ';');
 	},
 
 	DoWhileStatement(node, state) {
@@ -1202,7 +1187,7 @@ const handlers = {
 	},
 
 	Super(node, state) {
-		return [c('super', node)];
+		state.commands.push(c('super', node));
 	},
 
 	SwitchStatement(node, state) {
@@ -1299,7 +1284,7 @@ const handlers = {
 		state.commands.push(node.operator);
 
 		if (node.operator.length > 1) {
-			state.commands.push(c(' '));
+			state.commands.push(' ');
 		}
 
 		if (EXPRESSIONS_PRECEDENCE[node.argument.type] < EXPRESSIONS_PRECEDENCE.UnaryExpression) {
