@@ -760,6 +760,7 @@ const handlers = {
 		if (multiline) {
 			if_true.children.push(indent, newline, '? ');
 			if_false.children.push(newline, ': ');
+			state.commands.push(dedent);
 		} else {
 			if_true.children.push(' ? ');
 			if_false.children.push(' : ');
