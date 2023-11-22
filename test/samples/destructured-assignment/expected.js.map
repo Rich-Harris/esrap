@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "({ answer = 42 } = life_the_universe_and_everything);\n"
+  ],
+  "mappings": "GAAG,MAAM,GAAG,EAAE,KAAK,gCAAgC"
+}

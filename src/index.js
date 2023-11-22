@@ -39,10 +39,14 @@ export function print(node, opts = {}) {
 		);
 	}
 
-	const chunks = handle(node, {
-		indent: '',
-		comments: []
-	});
+	/** @type {import('./types').State} */
+	const state = {
+		commands: [],
+		comments: [],
+		multiline: false
+	};
+
+	handle(node, state);
 
 	/** @typedef {[number, number, number, number]} Segment */
 
@@ -55,22 +59,12 @@ export function print(node, opts = {}) {
 	/** @type {Segment[]} */
 	let current_line = [];
 
-	for (let i = 0; i < chunks.length; i += 1) {
-		const chunk = chunks[i];
+	/** @param {string} str */
+	function append(str) {
+		code += str;
 
-		code += chunk.content;
-
-		if (chunk.loc) {
-			current_line.push([
-				current_column,
-				0, // source index is always zero
-				chunk.loc.start.line - 1,
-				chunk.loc.start.column
-			]);
-		}
-
-		for (let i = 0; i < chunk.content.length; i += 1) {
-			if (chunk.content[i] === '\n') {
+		for (let i = 0; i < str.length; i += 1) {
+			if (str[i] === '\n') {
 				mappings.push(current_line);
 				current_line = [];
 				current_column = 0;
@@ -78,15 +72,75 @@ export function print(node, opts = {}) {
 				current_column += 1;
 			}
 		}
+	}
 
-		if (chunk.loc) {
-			current_line.push([
-				current_column,
-				0, // source index is always zero
-				chunk.loc.end.line - 1,
-				chunk.loc.end.column
-			]);
+	let newline = '\n';
+
+	/** @param {import('./types').Command} command */
+	function run(command) {
+		if (typeof command === 'string') {
+			append(command);
+			return;
 		}
+
+		switch (command.type) {
+			case 'Chunk':
+				const loc = command.loc;
+
+				if (loc) {
+					current_line.push([
+						current_column,
+						0, // source index is always zero
+						loc.start.line - 1,
+						loc.start.column
+					]);
+				}
+
+				append(command.content);
+
+				if (loc) {
+					current_line.push([
+						current_column,
+						0, // source index is always zero
+						loc.end.line - 1,
+						loc.end.column
+					]);
+				}
+
+				break;
+
+			case 'Newline':
+				append(newline);
+				break;
+
+			case 'Indent':
+				newline += '\t';
+				break;
+
+			case 'Dedent':
+				newline = newline.slice(0, -1);
+				break;
+
+			case 'Sequence':
+				for (let i = 0; i < command.children.length; i += 1) {
+					run(command.children[i]);
+				}
+
+				break;
+
+			case 'Comment':
+				if (command.comment.type === 'Line') {
+					append(`//${command.comment.value}`);
+				} else {
+					append(`/*${command.comment.value.replace(/\n/g, newline)}*/`);
+				}
+
+				break;
+		}
+	}
+
+	for (let i = 0; i < state.commands.length; i += 1) {
+		run(state.commands[i]);
 	}
 
 	mappings.push(current_line);

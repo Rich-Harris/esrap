@@ -5,7 +5,7 @@
     "input.js"
   ],
   "sourcesContent": [
-    "a = [1, 2, 3];\n\nb = [\n\t'the quick brown fox jumps over the lazy dog',\n\t'the quick brown fox jumps over the lazy dog',\n\t'the quick brown fox jumps over the lazy dog',\n\t4\n];\n\nsparse = [,,,];\n"
+    "a = [1, 2, 3];\n\nb = [\n\t'the quick brown fox jumps over the lazy dog',\n\t'the quick brown fox jumps over the lazy dog',\n\t'the quick brown fox jumps over the lazy dog',\n\t4\n];\n\nsparse = [,,,5];\nsparser = [,,,];\n"
   ],
-  "mappings": "AAAA,CAAC,IAAI,CAAC,EAAE,CAAC,EAAE,CAAC;;AAEZ,CAAC;CACA,6CAA6C;CAC7C,6CAA6C;CAC7C,6CAA6C;CAC7C,CAAC;;;AAGF,MAAM"
+  "mappings": "AAAA,CAAC,IAAI,CAAC,EAAE,CAAC,EAAE,CAAC;;AAEZ,CAAC;CACA,6CAA6C;CAC7C,6CAA6C;CAC7C,6CAA6C;CAC7C,CAAC;;;AAGF,MAAM,QAAO,CAAC;AACd,OAAO"
 }

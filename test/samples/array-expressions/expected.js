@@ -7,4 +7,5 @@ b = [
 	4
 ];
 
-sparse = [,,,];
+sparse = [,,, 5];
+sparser = [,,,];

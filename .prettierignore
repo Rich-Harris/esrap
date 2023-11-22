@@ -1,1 +1,3 @@
 test/samples/*/*.js
+test/sandbox/_input.js
+test/sandbox/_output.js

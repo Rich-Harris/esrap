@@ -37,12 +37,7 @@ function load(input) {
 
 			while (comments[0] && comments[0].start < node.start) {
 				comment = comments.shift();
-
-				const next = comments[0] || node;
-				comment.has_trailing_newline =
-					comment.type === 'Line' || /\n/.test(input.slice(comment.end, next.start));
-
-				(node.leadingComments || (node.leadingComments = [])).push(comment);
+				(node.leadingComments ??= []).push(comment);
 			}
 
 			next();
@@ -58,6 +53,45 @@ function load(input) {
 	});
 
 	return /** @type {import('estree').Program} */ (ast);
+}
+
+/** @param {import('estree').Node} ast */
+function clean(ast) {
+	const cleaned = walk(ast, null, {
+		_(node, context) {
+			delete node.loc;
+			delete node.start;
+			delete node.end;
+			delete node.leadingComments;
+			delete node.trailingComments;
+			context.next();
+		},
+		Program(node, context) {
+			node.body = node.body.filter((node) => node.type !== 'EmptyStatement');
+			context.next();
+		},
+		BlockStatement(node, context) {
+			node.body = node.body.filter((node) => node.type !== 'EmptyStatement');
+			context.next();
+		},
+		Property(node, context) {
+			if (node.kind === 'init') {
+				if (node.value.type === 'FunctionExpression') {
+					node.method = true;
+				}
+
+				const value = node.value.type === 'AssignmentPattern' ? node.value.left : node.value;
+
+				if (!node.computed && node.key.type === 'Identifier' && value.type === 'Identifier') {
+					node.shorthand = node.key.name === value.name;
+				}
+			}
+
+			context.next();
+		}
+	});
+
+	return cleaned;
 }
 
 for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
@@ -90,10 +124,26 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		Bun.write(`${__dirname}/samples/${dir}/_actual.js`, code);
 		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
 
+		const parsed = parse(code, {
+			ecmaVersion: 'latest',
+			sourceType: input_json.size > 0 ? 'script' : 'module'
+		});
+
+		Bun.write(
+			`${__dirname}/samples/${dir}/_actual.json`,
+			JSON.stringify(
+				parsed,
+				(key, value) => (typeof value === 'bigint' ? Number(value) : value),
+				'\t'
+			)
+		);
+
 		const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
 		expect(code.trim().replace(/^\t+$/gm, '')).toBe(expected.trim());
 
 		const expected_map = await Bun.file(`${__dirname}/samples/${dir}/expected.js.map`).json();
 		expect(map).toEqual(expected_map);
+
+		expect(clean(/** @type {import('estree').Node} */ (parsed))).toEqual(clean(ast));
 	});
 }

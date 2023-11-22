@@ -1,23 +1,46 @@
-// heavily based on https://github.com/davidbonnet/astring
-// released under MIT license https://github.com/davidbonnet/astring/blob/master/LICENSE
+/** @type {import('./types').Newline} */
+const newline = { type: 'Newline' };
+
+/** @type {import('./types').Indent} */
+const indent = { type: 'Indent' };
+
+/** @type {import('./types').Dedent} */
+const dedent = { type: 'Dedent' };
 
 /**
- * Does `array.push` for all `items`. Needed because `array.push(...items)` throws
- * "Maximum call stack size exceeded" when `items` is too big of an array.
- *
- * @param {any[]} array
- * @param {any[]} items
+ * @param {import('./types').Command[]} children
+ * @returns {import('./types').Sequence}
  */
-function push_array(array, items) {
-	for (let i = 0; i < items.length; i++) {
-		array.push(items[i]);
+function create_sequence(...children) {
+	return { type: 'Sequence', children };
+}
+
+/**
+ * Rough estimate of the combined width of a group of commands
+ * @param {import('./types').Command[]} commands
+ * @param {number} from
+ * @param {number} to
+ */
+function measure(commands, from, to = commands.length) {
+	let total = 0;
+	for (let i = from; i < to; i += 1) {
+		const command = commands[i];
+		if (typeof command === 'string') {
+			total += command.length;
+		} else if (command.type === 'Chunk') {
+			total += command.content.length;
+		} else if (command.type === 'Sequence') {
+			// assume this is ', '
+			total += 2;
+		}
 	}
+
+	return total;
 }
 
 /**
  * @param {import('estree').Node} node
  * @param {import('./types').State} state
- * @returns {import('./types').Chunk[]}
  */
 export function handle(node, state) {
 	const handler = handlers[node.type];
@@ -26,54 +49,46 @@ export function handle(node, state) {
 		throw new Error(`Not implemented ${node.type}`);
 	}
 
-	// @ts-expect-error
-	const result = handler(node, state);
-
 	if (node.leadingComments) {
-		prepend_comments(result, node.leadingComments, state);
+		prepend_comments(node.leadingComments, state, false);
 	}
+
+	// @ts-expect-error
+	handler(node, state);
 
 	if (node.trailingComments) {
 		state.comments.push(node.trailingComments[0]); // there is only ever one
 	}
-
-	return result;
 }
 
 /**
  * @param {string} content
- * @param {import('estree').Node} [node]
+ * @param {import('estree').Node} node
  * @returns {import('./types').Chunk}
  */
 function c(content, node) {
 	return {
+		type: 'Chunk',
 		content,
-		loc: node?.loc ?? null,
-		has_newline: /\n/.test(content)
+		loc: node?.loc ?? null
 	};
 }
 
 /**
- * @param {import('./types').Chunk[]} chunks
  * @param {import('estree').Comment[]} comments
  * @param {import('./types').State} state
+ * @param {boolean} newlines
  */
-function prepend_comments(chunks, comments, state) {
-	chunks.unshift(
-		c(
-			comments
-				.map((comment) =>
-					comment.type === 'Block'
-						? `/*${comment.value}*/${
-								/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
-						  }`
-						: `//${comment.value}${
-								/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
-						  }`
-				)
-				.join(``)
-		)
-	);
+function prepend_comments(comments, state, newlines) {
+	for (const comment of comments) {
+		state.commands.push({ type: 'Comment', comment });
+
+		if (newlines || comment.type === 'Line' || /\n/.test(comment.value)) {
+			state.commands.push(newline);
+		} else {
+			state.commands.push(' ');
+		}
+	}
 }
 
 const OPERATOR_PRECEDENCE = {
@@ -205,45 +220,6 @@ function has_call_expression(node) {
 	}
 }
 
-/** @param {import('./types').Chunk[]} chunks */
-const has_newline = (chunks) => {
-	for (let i = 0; i < chunks.length; i += 1) {
-		if (chunks[i].has_newline) return true;
-	}
-	return false;
-};
-
-/** @param {import('./types').Chunk[]} chunks */
-const get_length = (chunks) => {
-	let total = 0;
-	for (let i = 0; i < chunks.length; i += 1) {
-		total += chunks[i].content.length;
-	}
-	return total;
-};
-
-/**
- * @param {number} a
- * @param {number} b
- */
-const sum = (a, b) => a + b;
-
-/**
- * @param {import('./types').Chunk[][]} nodes
- * @param {import('./types').Chunk} separator
- * @returns {import('./types').Chunk[]}
- */
-const join = (nodes, separator) => {
-	if (nodes.length === 0) return [];
-
-	const joined = [...nodes[0]];
-	for (let i = 1; i < nodes.length; i += 1) {
-		joined.push(separator);
-		push_array(joined, nodes[i]);
-	}
-	return joined;
-};
-
 const grouped_expression_types = [
 	'ImportDeclaration',
 	'VariableDeclaration',
@@ -256,96 +232,50 @@ const grouped_expression_types = [
  * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
-	/** @type {import('./types').Chunk[][][]} */
-	const groups = [];
-
-	/** @type {import('./types').Chunk[][]} */
-	let group = [];
-
 	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
-
-	function flush() {
-		if (group.length > 0) {
-			groups.push(group);
-			group = [];
-		}
-	}
+	let first = true;
+	let needs_margin = false;
 
 	for (const statement of nodes) {
 		if (statement.type === 'EmptyStatement') continue;
 
-		if (
-			(grouped_expression_types.includes(statement.type) ||
-				grouped_expression_types.includes(last_statement.type)) &&
-			last_statement.type !== statement.type
-		) {
-			flush();
-		}
+		const margin = create_sequence();
+
+		if (!first) state.commands.push(margin, newline);
+		first = false;
 
 		const leadingComments = statement.leadingComments;
 		delete statement.leadingComments;
 
-		const chunks = handle(statement, {
-			...state,
-			indent: state.indent
-		});
-
-		// if a statement requires multiple lines, or it has a leading `/**` comment,
-		// we add blank lines around it
-		const standalone =
-			has_newline(chunks) ||
-			(leadingComments?.[0]?.type === 'Block' && leadingComments[0].value.startsWith('*'));
-
 		if (leadingComments && leadingComments.length > 0) {
-			prepend_comments(chunks, leadingComments, state);
-			flush();
+			prepend_comments(leadingComments, state, true);
+		}
+
+		const child_state = { ...state, multiline: false };
+		handle(statement, child_state);
+
+		if (
+			child_state.multiline ||
+			needs_margin ||
+			((grouped_expression_types.includes(statement.type) ||
+				grouped_expression_types.includes(last_statement.type)) &&
+				last_statement.type !== statement.type)
+		) {
+			margin.children.push('\n');
 		}
 
 		let add_newline = false;
 
 		while (state.comments.length) {
 			const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-			const prefix = add_newline ? `\n${state.indent}` : ` `;
 
-			chunks.push(
-				c(
-					comment.type === 'Block' ? `${prefix}/*${comment.value}*/` : `${prefix}//${comment.value}`
-				)
-			);
-
+			state.commands.push(add_newline ? newline : ' ', { type: 'Comment', comment });
 			add_newline = comment.type === 'Line';
 		}
 
-		if (standalone) {
-			flush();
-			group.push(chunks);
-			flush();
-		} else {
-			group.push(chunks);
-		}
-
+		needs_margin = child_state.multiline;
 		last_statement = statement;
 	}
-
-	flush();
-
-	const chunks = [];
-
-	for (let i = 0; i < groups.length; i += 1) {
-		if (i > 0) {
-			chunks.push(c(`\n\n${state.indent}`));
-		}
-
-		for (let j = 0; j < groups[i].length; j += 1) {
-			if (j > 0) {
-				chunks.push(c(`\n${state.indent}`));
-			}
-
-			push_array(chunks, groups[i][j]);
-		}
-	}
-
-	return chunks;
 };
 
 /**
@@ -353,77 +283,124 @@ const handle_body = (nodes, state) => {
  * @param {import('./types').State} state
  */
 const handle_var_declaration = (node, state) => {
-	const chunks = [c(`${node.kind} `)];
+	const index = state.commands.length;
 
-	const declarators = node.declarations.map((d) =>
-		handle(d, {
-			...state,
-			indent: state.indent + (node.declarations.length === 1 ? '' : '\t')
-		})
-	);
+	const open = create_sequence();
+	const join = create_sequence();
+	const child_state = { ...state, multiline: false };
 
-	const multiple_lines =
-		declarators.some(has_newline) ||
-		declarators.map(get_length).reduce(sum, 0) +
-			(state.indent.length + declarators.length - 1) * 2 >
-			80;
+	state.commands.push(`${node.kind} `, open);
 
-	const separator = c(multiple_lines ? `,\n${state.indent}\t` : ', ');
+	let first = true;
 
-	push_array(chunks, join(declarators, separator));
+	for (const d of node.declarations) {
+		if (!first) state.commands.push(join);
+		first = false;
 
-	return chunks;
+		handle(d, child_state);
+	}
+
+	const multiline =
+		child_state.multiline || (node.declarations.length > 1 && measure(state.commands, index) > 50);
+
+	if (multiline) {
+		state.multiline = true;
+		if (node.declarations.length > 1) open.children.push(indent);
+		join.children.push(',', newline);
+		if (node.declarations.length > 1) state.commands.push(dedent);
+	} else {
+		join.children.push(', ');
+	}
 };
 
+/**
+ * @template {import('estree').Node} T
+ * @param {Array<T | null>} nodes
+ * @param {import('./types').State} state
+ * @param {boolean} spaces
+ * @param {(node: T, state: import('./types').State) => void} fn
+ */
+function sequence(nodes, state, spaces, fn) {
+	if (nodes.length === 0) return;
+
+	const index = state.commands.length;
+
+	const open = create_sequence();
+	const join = create_sequence();
+	const close = create_sequence();
+
+	state.commands.push(open);
+
+	const child_state = { ...state, multiline: false };
+
+	let prev;
+
+	for (let i = 0; i < nodes.length; i += 1) {
+		const node = nodes[i];
+		const is_first = i === 0;
+		const is_last = i === nodes.length - 1;
+
+		if (node) {
+			if (!is_first && !prev) {
+				state.commands.push(join);
+			}
+
+			fn(node, child_state);
+
+			if (!is_last) {
+				state.commands.push(',');
+			}
+
+			if (state.comments.length > 0) {
+				state.commands.push(' ');
+
+				while (state.comments.length) {
+					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+					state.commands.push({ type: 'Comment', comment });
+					if (!is_last) state.commands.push(join);
+				}
+
+				child_state.multiline = true;
+			} else {
+				if (!is_last) state.commands.push(join);
+			}
+		} else {
+			// This is only used for ArrayPattern and ArrayExpression, but
+			// it makes more sense to have the logic here than there, because
+			// otherwise we'd duplicate a lot more stuff
+			state.commands.push(',');
+		}
+
+		prev = node;
+	}
+
+	state.commands.push(close);
+
+	const multiline = child_state.multiline || measure(state.commands, index) > 50;
+
+	if (multiline) {
+		state.multiline = true;
+
+		open.children.push(indent, newline);
+		join.children.push(newline);
+		close.children.push(dedent, newline);
+	} else {
+		if (spaces) open.children.push(' ');
+		join.children.push(' ');
+		if (spaces) close.children.push(' ');
+	}
+}
+
+/** @satisfies {Record<string, (node: any, state: import('./types').State) => undefined>} */
 const shared = {
 	/**
 	 * @param {import('estree').ArrayExpression | import('estree').ArrayPattern} node
 	 * @param {import('./types').State} state
 	 */
 	'ArrayExpression|ArrayPattern': (node, state) => {
-		const chunks = [c('[')];
-
-		/** @type {import('./types').Chunk[][]} */
-		const elements = [];
-
-		/** @type {import('./types').Chunk[]} */
-		let sparse_commas = [];
-
-		for (let i = 0; i < node.elements.length; i += 1) {
-			// can't use map/forEach because of sparse arrays
-			const element = node.elements[i];
-			if (element) {
-				elements.push([
-					...sparse_commas,
-					...handle(element, {
-						...state,
-						indent: state.indent + '\t'
-					})
-				]);
-				sparse_commas = [];
-			} else {
-				sparse_commas.push(c(','));
-			}
-		}
-
-		const multiple_lines =
-			elements.some(has_newline) ||
-			elements.map(get_length).reduce(sum, 0) + (state.indent.length + elements.length - 1) * 2 >
-				80;
-
-		if (multiple_lines) {
-			chunks.push(c(`\n${state.indent}\t`));
-			push_array(chunks, join(elements, c(`,\n${state.indent}\t`)));
-			chunks.push(c(`\n${state.indent}`));
-			push_array(chunks, sparse_commas);
-		} else {
-			push_array(chunks, join(elements, c(', ')));
-			push_array(chunks, sparse_commas);
-		}
-
-		chunks.push(c(']'));
-
-		return chunks;
+		state.commands.push('[');
+		sequence(/** @type {import('estree').Node[]} */ (node.elements), state, false, handle);
+		state.commands.push(']');
 	},
 
 	/**
@@ -431,11 +408,6 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'BinaryExpression|LogicalExpression': (node, state) => {
-		/**
-		 * @type any[]
-		 */
-		const chunks = [];
-
 		// TODO
 		// const is_in = node.operator === 'in';
 		// if (is_in) {
@@ -444,24 +416,22 @@ const shared = {
 		// }
 
 		if (needs_parens(node.left, node, false)) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.left, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.left, state);
+			state.commands.push(')');
 		} else {
-			push_array(chunks, handle(node.left, state));
+			handle(node.left, state);
 		}
 
-		chunks.push(c(` ${node.operator} `));
+		state.commands.push(` ${node.operator} `);
 
 		if (needs_parens(node.right, node, true)) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.right, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.right, state);
+			state.commands.push(')');
 		} else {
-			push_array(chunks, handle(node.right, state));
+			handle(node.right, state);
 		}
-
-		return chunks;
 	},
 
 	/**
@@ -469,13 +439,98 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'BlockStatement|ClassBody': (node, state) => {
-		if (node.body.length === 0) return [c('{}')];
+		if (node.body.length === 0) {
+			state.commands.push('{}');
+			return;
+		}
 
-		return [
-			c(`{\n${state.indent}\t`),
-			...handle_body(node.body, { ...state, indent: state.indent + '\t' }),
-			c(`\n${state.indent}}`)
-		];
+		state.multiline = true;
+
+		state.commands.push('{', indent, newline);
+		handle_body(node.body, state);
+		state.commands.push(dedent, newline, '}');
+	},
+
+	/**
+	 * @param {import('estree').CallExpression | import('estree').NewExpression} node
+	 * @param {import('./types').State} state
+	 */
+	'CallExpression|NewExpression': (node, state) => {
+		const index = state.commands.length;
+
+		if (node.type === 'NewExpression') {
+			state.commands.push('new ');
+		}
+
+		const needs_parens =
+			EXPRESSIONS_PRECEDENCE[node.callee.type] < EXPRESSIONS_PRECEDENCE.CallExpression ||
+			(node.type === 'NewExpression' && has_call_expression(node.callee));
+
+		if (needs_parens) {
+			state.commands.push('(');
+			handle(node.callee, state);
+			state.commands.push(')');
+		} else {
+			handle(node.callee, state);
+		}
+
+		if (/** @type {import('estree').SimpleCallExpression} */ (node).optional) {
+			state.commands.push('?.');
+		}
+
+		const open = create_sequence();
+		const join = create_sequence();
+		const close = create_sequence();
+
+		state.commands.push('(', open);
+
+		// if the final argument is multiline, it doesn't need to force all the
+		// other arguments to also be multiline
+		const child_state = { ...state, multiline: false };
+		const final_state = { ...state, multiline: false };
+
+		for (let i = 0; i < node.arguments.length; i += 1) {
+			if (i > 0) {
+				if (state.comments.length > 0) {
+					state.commands.push(', ');
+
+					while (state.comments.length) {
+						const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+
+						state.commands.push({ type: 'Comment', comment });
+
+						if (comment.type === 'Line') {
+							child_state.multiline = true;
+							state.commands.push(newline);
+						} else {
+							state.commands.push(' ');
+						}
+					}
+				} else {
+					state.commands.push(join);
+				}
+			}
+
+			const p = node.arguments[i];
+
+			handle(p, i === node.arguments.length - 1 ? final_state : child_state);
+		}
+
+		state.commands.push(close, ')');
+
+		const multiline = child_state.multiline;
+
+		if (multiline || final_state.multiline) {
+			state.multiline = true;
+		}
+
+		if (multiline) {
+			open.children.push(indent, newline);
+			join.children.push(',', newline);
+			close.children.push(dedent, newline);
+		} else {
+			join.children.push(', ');
+		}
 	},
 
 	/**
@@ -483,22 +538,20 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'ClassDeclaration|ClassExpression': (node, state) => {
-		const chunks = [c('class ')];
+		state.commands.push('class ');
 
 		if (node.id) {
-			push_array(chunks, handle(node.id, state));
-			chunks.push(c(' '));
+			handle(node.id, state);
+			state.commands.push(' ');
 		}
 
 		if (node.superClass) {
-			chunks.push(c('extends '));
-			push_array(chunks, handle(node.superClass, state));
-			chunks.push(c(' '));
+			state.commands.push('extends ');
+			handle(node.superClass, state);
+			state.commands.push(' ');
 		}
 
-		push_array(chunks, handle(node.body, state));
-
-		return chunks;
+		handle(node.body, state);
 	},
 
 	/**
@@ -506,20 +559,20 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'ForInStatement|ForOfStatement': (node, state) => {
-		const chunks = [c(`for ${node.type === 'ForOfStatement' && node.await ? 'await ' : ''}(`)];
+		state.commands.push('for ');
+		if (node.type === 'ForOfStatement' && node.await) state.commands.push('await ');
+		state.commands.push('(');
 
 		if (node.left.type === 'VariableDeclaration') {
-			push_array(chunks, handle_var_declaration(node.left, state));
+			handle_var_declaration(node.left, state);
 		} else {
-			push_array(chunks, handle(node.left, state));
+			handle(node.left, state);
 		}
 
-		chunks.push(c(node.type === 'ForInStatement' ? ` in ` : ` of `));
-		push_array(chunks, handle(node.right, state));
-		chunks.push(c(') '));
-		push_array(chunks, handle(node.body, state));
-
-		return chunks;
+		state.commands.push(node.type === 'ForInStatement' ? ` in ` : ` of `);
+		handle(node.right, state);
+		state.commands.push(') ');
+		handle(node.body, state);
 	},
 
 	/**
@@ -527,38 +580,15 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'FunctionDeclaration|FunctionExpression': (node, state) => {
-		const chunks = [];
+		if (node.async) state.commands.push('async ');
+		state.commands.push(node.generator ? 'function* ' : 'function ');
+		if (node.id) handle(node.id, state);
 
-		if (node.async) chunks.push(c('async '));
-		chunks.push(c(node.generator ? 'function* ' : 'function '));
-		if (node.id) push_array(chunks, handle(node.id, state));
-		chunks.push(c('('));
+		state.commands.push('(');
+		sequence(node.params, state, false, handle);
+		state.commands.push(') ');
 
-		const params = node.params.map((p) =>
-			handle(p, {
-				...state,
-				indent: state.indent + '\t'
-			})
-		);
-
-		const multiple_lines =
-			params.some(has_newline) ||
-			params.map(get_length).reduce(sum, 0) + (state.indent.length + params.length - 1) * 2 > 80;
-
-		const separator = c(multiple_lines ? `,\n${state.indent}` : ', ');
-
-		if (multiple_lines) {
-			chunks.push(c(`\n${state.indent}\t`));
-			push_array(chunks, join(params, separator));
-			chunks.push(c(`\n${state.indent}`));
-		} else {
-			push_array(chunks, join(params, separator));
-		}
-
-		chunks.push(c(') '));
-		push_array(chunks, handle(node.body, state));
-
-		return chunks;
+		handle(node.body, state);
 	},
 
 	/**
@@ -566,7 +596,8 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'RestElement|SpreadElement': (node, state) => {
-		return [c('...'), ...handle(node.argument, state)];
+		state.commands.push('...');
+		handle(node.argument, state);
 	}
 };
 
@@ -577,47 +608,34 @@ const handlers = {
 	ArrayPattern: shared['ArrayExpression|ArrayPattern'],
 
 	ArrowFunctionExpression: (node, state) => {
-		const chunks = [];
+		if (node.async) state.commands.push('async ');
 
-		if (node.async) chunks.push(c('async '));
-
-		if (node.params.length === 1 && node.params[0].type === 'Identifier') {
-			push_array(chunks, handle(node.params[0], state));
-		} else {
-			const params = node.params.map((param) =>
-				handle(param, {
-					...state,
-					indent: state.indent + '\t'
-				})
-			);
-
-			chunks.push(c('('));
-			push_array(chunks, join(params, c(', ')));
-			chunks.push(c(')'));
-		}
-
-		chunks.push(c(' => '));
+		state.commands.push('(');
+		sequence(node.params, state, false, handle);
+		state.commands.push(') => ');
 
 		if (
 			node.body.type === 'ObjectExpression' ||
 			(node.body.type === 'AssignmentExpression' && node.body.left.type === 'ObjectPattern')
 		) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.body, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.body, state);
+			state.commands.push(')');
 		} else {
-			push_array(chunks, handle(node.body, state));
+			handle(node.body, state);
 		}
-
-		return chunks;
 	},
 
 	AssignmentExpression(node, state) {
-		return [...handle(node.left, state), c(` ${node.operator} `), ...handle(node.right, state)];
+		handle(node.left, state);
+		state.commands.push(` ${node.operator} `);
+		handle(node.right, state);
 	},
 
 	AssignmentPattern(node, state) {
-		return [...handle(node.left, state), c(` = `), ...handle(node.right, state)];
+		handle(node.left, state);
+		state.commands.push(' = ');
+		handle(node.right, state);
 	},
 
 	AwaitExpression(node, state) {
@@ -625,13 +643,16 @@ const handlers = {
 			const precedence = EXPRESSIONS_PRECEDENCE[node.argument.type];
 
 			if (precedence && precedence < EXPRESSIONS_PRECEDENCE.AwaitExpression) {
-				return [c('await ('), ...handle(node.argument, state), c(')')];
+				state.commands.push('await (');
+				handle(node.argument, state);
+				state.commands.push(')');
 			} else {
-				return [c('await '), ...handle(node.argument, state)];
+				state.commands.push('await ');
+				handle(node.argument, state);
 			}
+		} else {
+			state.commands.push('await');
 		}
-
-		return [c('await')];
 	},
 
 	BinaryExpression: shared['BinaryExpression|LogicalExpression'],
@@ -639,75 +660,19 @@ const handlers = {
 	BlockStatement: shared['BlockStatement|ClassBody'],
 
 	BreakStatement(node, state) {
-		return node.label ? [c('break '), ...handle(node.label, state), c(';')] : [c('break;')];
+		if (node.label) {
+			state.commands.push('break ');
+			handle(node.label, state);
+			state.commands.push(';');
+		} else {
+			state.commands.push('break;');
+		}
 	},
 
-	CallExpression(node, state) {
-		/**
-		 * @type any[]
-		 */
-		const chunks = [];
-
-		if (EXPRESSIONS_PRECEDENCE[node.callee.type] < EXPRESSIONS_PRECEDENCE.CallExpression) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.callee, state));
-			chunks.push(c(')'));
-		} else {
-			push_array(chunks, handle(node.callee, state));
-		}
-
-		if (/** @type {import('estree').SimpleCallExpression} */ (node).optional) {
-			chunks.push(c('?.'));
-		}
-
-		let has_inline_comment = false;
-		let arg_chunks = [];
-		outer: for (const arg of node.arguments) {
-			const chunks = [];
-			while (state.comments.length) {
-				const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-				if (comment.type === 'Line') {
-					has_inline_comment = true;
-					break outer;
-				}
-				chunks.push(c(comment.type === 'Block' ? `/*${comment.value}*/ ` : `//${comment.value}`));
-			}
-			push_array(chunks, handle(arg, state));
-			arg_chunks.push(chunks);
-		}
-
-		const multiple_lines = has_inline_comment || arg_chunks.slice(0, -1).some(has_newline); // TODO or length exceeds 80
-		if (multiple_lines) {
-			// need to handle args again. TODO find alternative approach?
-			const args = node.arguments.map((arg, i) => {
-				const chunks = handle(arg, {
-					...state,
-					indent: `${state.indent}\t`
-				});
-				if (i < node.arguments.length - 1) chunks.push(c(','));
-				while (state.comments.length) {
-					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-					chunks.push(
-						c(comment.type === 'Block' ? ` /*${comment.value}*/ ` : ` //${comment.value}`)
-					);
-				}
-				return chunks;
-			});
-
-			chunks.push(c(`(\n${state.indent}\t`));
-			push_array(chunks, join(args, c(`\n${state.indent}\t`)));
-			chunks.push(c(`\n${state.indent})`));
-		} else {
-			chunks.push(c('('));
-			push_array(chunks, join(arg_chunks, c(', ')));
-			chunks.push(c(')'));
-		}
-
-		return chunks;
-	},
+	CallExpression: shared['CallExpression|NewExpression'],
 
 	ChainExpression(node, state) {
-		return handle(node.expression, state);
+		handle(node.expression, state);
 	},
 
 	ClassBody: shared['BlockStatement|ClassBody'],
@@ -717,118 +682,103 @@ const handlers = {
 	ClassExpression: shared['ClassDeclaration|ClassExpression'],
 
 	ConditionalExpression(node, state) {
-		/**
-		 * @type any[]
-		 */
-		const chunks = [];
-
 		if (EXPRESSIONS_PRECEDENCE[node.test.type] > EXPRESSIONS_PRECEDENCE.ConditionalExpression) {
-			push_array(chunks, handle(node.test, state));
+			handle(node.test, state);
 		} else {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.test, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.test, state);
+			state.commands.push(')');
 		}
 
-		const child_state = { ...state, indent: state.indent + '\t' };
+		const if_true = create_sequence();
+		const if_false = create_sequence();
 
-		const consequent = handle(node.consequent, child_state);
-		const alternate = handle(node.alternate, child_state);
+		const child_state = { ...state, multiline: false };
 
-		const multiple_lines =
-			has_newline(consequent) ||
-			has_newline(alternate) ||
-			get_length(chunks) + get_length(consequent) + get_length(alternate) > 50;
+		state.commands.push(if_true);
+		handle(node.consequent, child_state);
+		state.commands.push(if_false);
+		handle(node.alternate, child_state);
 
-		if (multiple_lines) {
-			chunks.push(c(`\n${state.indent}? `));
-			push_array(chunks, consequent);
-			chunks.push(c(`\n${state.indent}: `));
-			push_array(chunks, alternate);
+		const multiline = child_state.multiline;
+
+		if (multiline) {
+			if_true.children.push(indent, newline, '? ');
+			if_false.children.push(newline, ': ');
+			state.commands.push(dedent);
 		} else {
-			chunks.push(c(` ? `));
-			push_array(chunks, consequent);
-			chunks.push(c(` : `));
-			push_array(chunks, alternate);
+			if_true.children.push(' ? ');
+			if_false.children.push(' : ');
 		}
-
-		return chunks;
 	},
 
 	ContinueStatement(node, state) {
-		return node.label ? [c('continue '), ...handle(node.label, state), c(';')] : [c('continue;')];
+		if (node.label) {
+			state.commands.push('continue ');
+			handle(node.label, state);
+			state.commands.push(';');
+		} else {
+			state.commands.push('continue;');
+		}
 	},
 
 	DebuggerStatement(node, state) {
-		return [c('debugger', node), c(';')];
+		state.commands.push(c('debugger', node), ';');
 	},
 
 	DoWhileStatement(node, state) {
-		return [
-			c('do '),
-			...handle(node.body, state),
-			c(' while ('),
-			...handle(node.test, state),
-			c(');')
-		];
+		state.commands.push('do ');
+		handle(node.body, state);
+		state.commands.push(' while (');
+		handle(node.test, state);
+		state.commands.push(');');
 	},
 
 	EmptyStatement(node, state) {
-		return [c(';')];
+		state.commands.push(';');
 	},
 
 	ExportAllDeclaration(node, state) {
-		return [c(`export * from `), ...handle(node.source, state), c(`;`)];
+		state.commands.push('export * from ');
+		handle(node.source, state);
+		state.commands.push(';');
 	},
 
 	ExportDefaultDeclaration(node, state) {
-		const chunks = [c(`export default `), ...handle(node.declaration, state)];
+		state.commands.push('export default ');
+
+		handle(node.declaration, state);
 
 		if (node.declaration.type !== 'FunctionDeclaration') {
-			chunks.push(c(';'));
+			state.commands.push(';');
 		}
-
-		return chunks;
 	},
 
 	ExportNamedDeclaration(node, state) {
-		const chunks = [c('export ')];
+		state.commands.push('export ');
 
 		if (node.declaration) {
-			push_array(chunks, handle(node.declaration, state));
-		} else {
-			const specifiers = node.specifiers.map((specifier) => {
-				const name = handle(specifier.local, state)[0];
-				const as = handle(specifier.exported, state)[0];
-
-				if (name.content === as.content) {
-					return [name];
-				}
-
-				return [name, c(' as '), as];
-			});
-
-			const width = 7 + specifiers.map(get_length).reduce(sum, 0) + 2 * specifiers.length;
-
-			if (width > 80) {
-				chunks.push(c('{\n\t'));
-				push_array(chunks, join(specifiers, c(',\n\t')));
-				chunks.push(c('\n}'));
-			} else {
-				chunks.push(c('{ '));
-				push_array(chunks, join(specifiers, c(', ')));
-				chunks.push(c(' }'));
-			}
-
-			if (node.source) {
-				chunks.push(c(' from '));
-				push_array(chunks, handle(node.source, state));
-			}
+			handle(node.declaration, state);
+			return;
 		}
 
-		chunks.push(c(';'));
+		state.commands.push('{');
+		sequence(node.specifiers, state, true, (s, state) => {
+			handle(s.local, state);
 
-		return chunks;
+			if (s.local.name !== s.exported.name) {
+				state.commands.push(' as ');
+				handle(s.exported, state);
+			}
+		});
+		state.commands.push('}');
+
+		if (node.source) {
+			state.commands.push(' from ');
+			handle(node.source, state);
+		}
+
+		state.commands.push(';');
 	},
 
 	ExpressionStatement(node, state) {
@@ -837,32 +787,34 @@ const handlers = {
 			node.expression.left.type === 'ObjectPattern'
 		) {
 			// is an AssignmentExpression to an ObjectPattern
-			return [c('('), ...handle(node.expression, state), c(');')];
+			state.commands.push('(');
+			handle(node.expression, state);
+			state.commands.push(');');
+			return;
 		}
 
-		return [...handle(node.expression, state), c(';')];
+		handle(node.expression, state);
+		state.commands.push(';');
 	},
 
 	ForStatement: (node, state) => {
-		const chunks = [c('for (')];
+		state.commands.push('for (');
 
 		if (node.init) {
 			if (node.init.type === 'VariableDeclaration') {
-				push_array(chunks, handle_var_declaration(node.init, state));
+				handle_var_declaration(node.init, state);
 			} else {
-				push_array(chunks, handle(node.init, state));
+				handle(node.init, state);
 			}
 		}
 
-		chunks.push(c('; '));
-		if (node.test) push_array(chunks, handle(node.test, state));
-		chunks.push(c('; '));
-		if (node.update) push_array(chunks, handle(node.update, state));
+		state.commands.push('; ');
+		if (node.test) handle(node.test, state);
+		state.commands.push('; ');
+		if (node.update) handle(node.update, state);
 
-		chunks.push(c(') '));
-		push_array(chunks, handle(node.body, state));
-
-		return chunks;
+		state.commands.push(') ');
+		handle(node.body, state);
 	},
 
 	ForInStatement: shared['ForInStatement|ForOfStatement'],
@@ -873,297 +825,196 @@ const handlers = {
 
 	FunctionExpression: shared['FunctionDeclaration|FunctionExpression'],
 
-	Identifier(node) {
+	Identifier(node, state) {
 		let name = node.name;
-		return [c(name, node)];
+		state.commands.push(c(name, node));
 	},
 
 	IfStatement(node, state) {
-		const chunks = [
-			c('if ('),
-			...handle(node.test, state),
-			c(') '),
-			...handle(node.consequent, state)
-		];
+		state.commands.push('if (');
+		handle(node.test, state);
+		state.commands.push(') ');
+		handle(node.consequent, state);
 
 		if (node.alternate) {
-			chunks.push(c(' else '));
-			push_array(chunks, handle(node.alternate, state));
+			state.commands.push(' else ');
+			handle(node.alternate, state);
 		}
-
-		return chunks;
 	},
 
 	ImportDeclaration(node, state) {
-		const chunks = [c('import ')];
-
-		const { length } = node.specifiers;
-		const source = handle(node.source, state);
-
-		if (length > 0) {
-			let i = 0;
-
-			while (i < length) {
-				if (i > 0) {
-					chunks.push(c(', '));
-				}
-
-				const specifier = node.specifiers[i];
-
-				if (specifier.type === 'ImportDefaultSpecifier') {
-					chunks.push(c(specifier.local.name, specifier));
-					i += 1;
-				} else if (specifier.type === 'ImportNamespaceSpecifier') {
-					chunks.push(c('* as ' + specifier.local.name, specifier));
-					i += 1;
-				} else {
-					break;
-				}
-			}
-
-			if (i < length) {
-				// we have named specifiers
-				const specifiers = /** @type {import('estree').ImportSpecifier[]} */ (node.specifiers)
-					.slice(i)
-					.map((specifier) => {
-						const name = handle(specifier.imported, state)[0];
-						const as = handle(specifier.local, state)[0];
-
-						if (name.content === as.content) {
-							return [as];
-						}
-
-						return [name, c(' as '), as];
-					});
-
-				const width =
-					get_length(chunks) +
-					specifiers.map(get_length).reduce(sum, 0) +
-					2 * specifiers.length +
-					6 +
-					get_length(source);
-
-				if (width > 80) {
-					chunks.push(c(`{\n\t`));
-					push_array(chunks, join(specifiers, c(',\n\t')));
-					chunks.push(c('\n}'));
-				} else {
-					chunks.push(c(`{ `));
-					push_array(chunks, join(specifiers, c(', ')));
-					chunks.push(c(' }'));
-				}
-			}
-
-			chunks.push(c(' from '));
+		if (node.specifiers.length === 0) {
+			state.commands.push('import ');
+			handle(node.source, state);
+			state.commands.push(';');
+			return;
 		}
 
-		push_array(chunks, source);
-		chunks.push(c(';'));
+		/** @type {import('estree').ImportNamespaceSpecifier | null} */
+		let namespace_specifier = null;
 
-		return chunks;
+		/** @type {import('estree').ImportDefaultSpecifier | null} */
+		let default_specifier = null;
+
+		/** @type {import('estree').ImportSpecifier[]} */
+		const named_specifiers = [];
+
+		for (const s of node.specifiers) {
+			if (s.type === 'ImportNamespaceSpecifier') {
+				namespace_specifier = s;
+			} else if (s.type === 'ImportDefaultSpecifier') {
+				default_specifier = s;
+			} else {
+				named_specifiers.push(s);
+			}
+		}
+
+		state.commands.push('import ');
+
+		if (namespace_specifier) {
+			state.commands.push(c('* as ' + namespace_specifier.local.name, namespace_specifier));
+		}
+
+		if (default_specifier) {
+			state.commands.push(c(default_specifier.local.name, default_specifier));
+		}
+
+		if (named_specifiers.length > 0) {
+			if (default_specifier) state.commands.push(', ');
+
+			state.commands.push('{');
+			sequence(named_specifiers, state, true, (s, state) => {
+				if (s.local.name !== s.imported.name) {
+					handle(s.imported, state);
+					state.commands.push(' as ');
+				}
+
+				handle(s.local, state);
+			});
+			state.commands.push('}');
+		}
+
+		state.commands.push(' from ');
+		handle(node.source, state);
+		state.commands.push(';');
 	},
 
 	ImportExpression(node, state) {
-		return [c('import('), ...handle(node.source, state), c(')')];
+		state.commands.push('import(');
+		handle(node.source, state);
+		state.commands.push(')');
 	},
 
 	LabeledStatement(node, state) {
-		return [...handle(node.label, state), c(': '), ...handle(node.body, state)];
+		handle(node.label, state);
+		state.commands.push(': ');
+		handle(node.body, state);
 	},
 
 	Literal(node, state) {
-		if (typeof node.value === 'string') {
-			return [
-				// TODO do we need to handle weird unicode characters somehow?
-				// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
-				c(node.raw || JSON.stringify(node.value), node)
-			];
-		}
+		// TODO do we need to handle weird unicode characters somehow?
+		// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
+		const value =
+			node.raw ??
+			(typeof node.value === 'string' ? JSON.stringify(node.value) : String(node.value));
 
-		return [c(node.raw || String(node.value), node)];
+		state.commands.push(c(value, node));
 	},
 
 	LogicalExpression: shared['BinaryExpression|LogicalExpression'],
 
 	MemberExpression(node, state) {
-		/**
-		 * @type any[]
-		 */
-		const chunks = [];
-
 		if (EXPRESSIONS_PRECEDENCE[node.object.type] < EXPRESSIONS_PRECEDENCE.MemberExpression) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.object, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.object, state);
+			state.commands.push(')');
 		} else {
-			push_array(chunks, handle(node.object, state));
+			handle(node.object, state);
 		}
 
 		if (node.computed) {
 			if (node.optional) {
-				chunks.push(c('?.'));
+				state.commands.push('?.');
 			}
-			chunks.push(c('['));
-			push_array(chunks, handle(node.property, state));
-			chunks.push(c(']'));
+			state.commands.push('[');
+			handle(node.property, state);
+			state.commands.push(']');
 		} else {
-			chunks.push(c(node.optional ? '?.' : '.'));
-			push_array(chunks, handle(node.property, state));
+			state.commands.push(node.optional ? '?.' : '.');
+			handle(node.property, state);
 		}
-
-		return chunks;
 	},
 
 	MetaProperty(node, state) {
-		return [...handle(node.meta, state), c('.'), ...handle(node.property, state)];
+		handle(node.meta, state);
+		state.commands.push('.');
+		handle(node.property, state);
 	},
 
 	MethodDefinition(node, state) {
-		const chunks = [];
-
 		if (node.static) {
-			chunks.push(c('static '));
+			state.commands.push('static ');
 		}
 
 		if (node.kind === 'get' || node.kind === 'set') {
 			// Getter or setter
-			chunks.push(c(node.kind + ' '));
+			state.commands.push(node.kind + ' ');
 		}
 
 		if (node.value.async) {
-			chunks.push(c('async '));
+			state.commands.push('async ');
 		}
 
 		if (node.value.generator) {
-			chunks.push(c('*'));
+			state.commands.push('*');
 		}
 
-		if (node.computed) {
-			chunks.push(c('['));
-			push_array(chunks, handle(node.key, state));
-			chunks.push(c(']'));
-		} else {
-			push_array(chunks, handle(node.key, state));
-		}
+		if (node.computed) state.commands.push('[');
+		handle(node.key, state);
+		if (node.computed) state.commands.push(']');
 
-		chunks.push(c('('));
+		state.commands.push('(');
+		sequence(node.value.params, state, false, handle);
+		state.commands.push(') ');
 
-		const { params } = node.value;
-		for (let i = 0; i < params.length; i += 1) {
-			push_array(chunks, handle(params[i], state));
-			if (i < params.length - 1) chunks.push(c(', '));
-		}
-
-		chunks.push(c(') '));
-		push_array(chunks, handle(node.value.body, state));
-
-		return chunks;
+		handle(node.value.body, state);
 	},
 
-	NewExpression(node, state) {
-		const chunks = [c('new ')];
-
-		if (
-			EXPRESSIONS_PRECEDENCE[node.callee.type] < EXPRESSIONS_PRECEDENCE.CallExpression ||
-			has_call_expression(node.callee)
-		) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.callee, state));
-			chunks.push(c(')'));
-		} else {
-			push_array(chunks, handle(node.callee, state));
-		}
-
-		// TODO this is copied from CallExpression — DRY it out
-		const args = node.arguments.map((arg) =>
-			handle(arg, {
-				...state,
-				indent: state.indent + '\t'
-			})
-		);
-
-		const separator = args.some(has_newline) // TODO or length exceeds 80
-			? c(',\n' + state.indent)
-			: c(', ');
-
-		chunks.push(c('('));
-		push_array(chunks, join(args, separator));
-		chunks.push(c(')'));
-
-		return chunks;
-	},
+	NewExpression: shared['CallExpression|NewExpression'],
 
 	ObjectExpression(node, state) {
-		if (node.properties.length === 0) {
-			return [c('{}')];
-		}
+		state.commands.push('{');
+		sequence(node.properties, state, true, (p, state) => {
+			if (p.type === 'Property' && p.value.type === 'FunctionExpression') {
+				const fn = /** @type {import('estree').FunctionExpression} */ (p.value);
 
-		let has_inline_comment = false;
-
-		/** @type {import('./types').Chunk[]} */
-		const chunks = [];
-		const separator = c(', ');
-
-		node.properties.forEach((p, i) => {
-			push_array(
-				chunks,
-				handle(p, {
-					...state,
-					indent: state.indent + '\t'
-				})
-			);
-
-			if (state.comments.length) {
-				// TODO generalise this, so it works with ArrayExpressions and other things.
-				// At present, stuff will just get appended to the closest statement/declaration
-				chunks.push(c(', '));
-
-				while (state.comments.length) {
-					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-
-					chunks.push(
-						c(
-							comment.type === 'Block'
-								? `/*${comment.value}*/\n${state.indent}\t`
-								: `//${comment.value}\n${state.indent}\t`
-						)
-					);
-
-					if (comment.type === 'Line') {
-						has_inline_comment = true;
-					}
+				if (p.kind === 'get' || p.kind === 'set') {
+					state.commands.push(p.kind + ' ');
+				} else {
+					if (fn.async) state.commands.push('async ');
+					if (fn.generator) state.commands.push('*');
 				}
+
+				if (p.computed) state.commands.push('[');
+				handle(p.key, state);
+				if (p.computed) state.commands.push(']');
+
+				state.commands.push('(');
+				sequence(fn.params, state, false, handle);
+				state.commands.push(') ');
+
+				handle(fn.body, state);
 			} else {
-				if (i < node.properties.length - 1) {
-					chunks.push(separator);
-				}
+				handle(p, state);
 			}
 		});
-
-		const multiple_lines = has_inline_comment || has_newline(chunks) || get_length(chunks) > 40;
-
-		if (multiple_lines) {
-			separator.content = `,\n${state.indent}\t`;
-		}
-
-		return [
-			c(multiple_lines ? `{\n${state.indent}\t` : `{ `),
-			...chunks,
-			c(multiple_lines ? `\n${state.indent}}` : ` }`)
-		];
+		state.commands.push('}');
 	},
 
 	ObjectPattern(node, state) {
-		const chunks = [c('{ ')];
-
-		for (let i = 0; i < node.properties.length; i += 1) {
-			push_array(chunks, handle(node.properties[i], state));
-			if (i < node.properties.length - 1) chunks.push(c(', '));
-		}
-
-		chunks.push(c(' }'));
-
-		return chunks;
+		state.commands.push('{');
+		sequence(node.properties, state, true, handle);
+		state.commands.push('}');
 	},
 
 	// @ts-expect-error this isn't a real node type, but Acorn produces it
@@ -1172,100 +1023,54 @@ const handlers = {
 	},
 
 	PrivateIdentifier(node, state) {
-		const chunks = [c('#')];
-
-		push_array(chunks, [c(node.name, node)]);
-
-		return chunks;
+		state.commands.push('#', c(node.name, node));
 	},
 
 	Program(node, state) {
-		return handle_body(node.body, state);
+		handle_body(node.body, state);
 	},
 
 	Property(node, state) {
-		const value = handle(node.value, state);
+		const value = node.value.type === 'AssignmentPattern' ? node.value.left : node.value;
 
-		if (node.key === node.value) {
-			return value;
-		}
-
-		// special case
-		if (
+		const shorthand =
 			!node.computed &&
-			node.value.type === 'AssignmentPattern' &&
-			node.value.left.type === 'Identifier' &&
+			node.kind === 'init' &&
 			node.key.type === 'Identifier' &&
-			node.value.left.name === node.key.name
-		) {
-			return value;
+			value.type === 'Identifier' &&
+			node.key.name === value.name;
+
+		if (shorthand) {
+			handle(node.value, state);
+			return;
 		}
 
-		if (
-			!node.computed &&
-			node.value.type === 'Identifier' &&
-			((node.key.type === 'Identifier' && node.key.name === value[0].content) ||
-				(node.key.type === 'Literal' && node.key.value === value[0].content))
-		) {
-			return value;
-		}
-
-		const key = handle(node.key, state);
-
-		if (node.value.type === 'FunctionExpression' && !node.value.id) {
-			const chunks = node.kind !== 'init' ? [c(`${node.kind} `)] : [];
-
-			if (node.value.async) {
-				chunks.push(c('async '));
-			}
-			if (node.value.generator) {
-				chunks.push(c('*'));
-			}
-
-			push_array(chunks, node.computed ? [c('['), ...key, c(']')] : key);
-			chunks.push(c('('));
-			push_array(
-				chunks,
-				join(
-					node.value.params.map((param) => handle(param, state)),
-					c(', ')
-				)
-			);
-			chunks.push(c(') '));
-			push_array(chunks, handle(node.value.body, state));
-
-			return chunks;
-		}
-
-		if (node.computed) {
-			return [c('['), ...key, c(']: '), ...value];
-		}
-
-		return [...key, c(': '), ...value];
+		if (node.computed) state.commands.push('[');
+		handle(node.key, state);
+		state.commands.push(node.computed ? ']: ' : ': ');
+		handle(node.value, state);
 	},
 
 	PropertyDefinition(node, state) {
-		const chunks = [];
-
 		if (node.static) {
-			chunks.push(c('static '));
+			state.commands.push('static ');
 		}
 
 		if (node.computed) {
-			chunks.push(c('['), ...handle(node.key, state), c(']'));
+			state.commands.push('[');
+			handle(node.key, state);
+			state.commands.push(']');
 		} else {
-			chunks.push(...handle(node.key, state));
+			handle(node.key, state);
 		}
 
 		if (node.value) {
-			chunks.push(c(' = '));
+			state.commands.push(' = ');
 
-			chunks.push(...handle(node.value, state));
+			handle(node.value, state);
 		}
 
-		chunks.push(c(';'));
-
-		return chunks;
+		state.commands.push(';');
 	},
 
 	RestElement: shared['RestElement|SpreadElement'],
@@ -1274,163 +1079,186 @@ const handlers = {
 		if (node.argument) {
 			const contains_comment =
 				node.argument.leadingComments &&
-				node.argument.leadingComments.some(
-					(/** @type {any} */ comment) => comment.has_trailing_newline
-				);
-			return [
-				c(contains_comment ? 'return (' : 'return '),
-				...handle(node.argument, state),
-				c(contains_comment ? ');' : ';')
-			];
+				node.argument.leadingComments.some((comment) => comment.type === 'Line');
+
+			state.commands.push(contains_comment ? 'return (' : 'return ');
+			handle(node.argument, state);
+			state.commands.push(contains_comment ? ');' : ';');
 		} else {
-			return [c('return;')];
+			state.commands.push('return;');
 		}
 	},
 
 	SequenceExpression(node, state) {
-		const expressions = node.expressions.map((e) => handle(e, state));
-
-		return [c('('), ...join(expressions, c(', ')), c(')')];
+		state.commands.push('(');
+		sequence(node.expressions, state, false, handle);
+		state.commands.push(')');
 	},
 
 	SpreadElement: shared['RestElement|SpreadElement'],
 
 	StaticBlock(node, state) {
-		return [
-			c('static '),
-			c(`{\n${state.indent}\t`),
-			...handle_body(node.body, { ...state, indent: state.indent + '\t' }),
-			c(`\n${state.indent}}`)
-		];
+		state.commands.push(indent, 'static {', newline);
+
+		handle_body(node.body, state);
+
+		state.commands.push(dedent, newline, '}');
 	},
 
 	Super(node, state) {
-		return [c('super', node)];
+		state.commands.push(c('super', node));
 	},
 
 	SwitchStatement(node, state) {
-		const chunks = [c('switch ('), ...handle(node.discriminant, state), c(') {')];
+		state.commands.push('switch (');
+		handle(node.discriminant, state);
+		state.commands.push(') {', indent);
 
-		node.cases.forEach((block) => {
+		let first = true;
+
+		for (const block of node.cases) {
+			if (!first) state.commands.push('\n');
+			first = false;
+
 			if (block.test) {
-				chunks.push(c(`\n${state.indent}\tcase `));
-				push_array(chunks, handle(block.test, { ...state, indent: `${state.indent}\t` }));
-				chunks.push(c(':'));
+				state.commands.push(newline, `case `);
+				handle(block.test, state);
+				state.commands.push(':');
 			} else {
-				chunks.push(c(`\n${state.indent}\tdefault:`));
+				state.commands.push(newline, `default:`);
 			}
 
-			block.consequent.forEach((statement) => {
-				chunks.push(c(`\n${state.indent}\t\t`));
-				push_array(chunks, handle(statement, { ...state, indent: `${state.indent}\t\t` }));
-			});
-		});
+			state.commands.push(indent);
 
-		chunks.push(c(`\n${state.indent}}`));
+			for (const statement of block.consequent) {
+				state.commands.push(newline);
+				handle(statement, state);
+			}
 
-		return chunks;
+			state.commands.push(dedent);
+		}
+
+		state.commands.push(dedent, newline, `}`);
 	},
 
 	TaggedTemplateExpression(node, state) {
-		return handle(node.tag, state).concat(handle(node.quasi, state));
+		handle(node.tag, state);
+		handle(node.quasi, state);
 	},
 
 	TemplateLiteral(node, state) {
-		const chunks = [c('`')];
+		state.commands.push('`');
 
 		const { quasis, expressions } = node;
 
 		for (let i = 0; i < expressions.length; i++) {
-			chunks.push(c(quasis[i].value.raw), c('${'));
-			push_array(chunks, handle(expressions[i], state));
-			chunks.push(c('}'));
+			const raw = quasis[i].value.raw;
+
+			state.commands.push(raw, '${');
+			handle(expressions[i], state);
+			state.commands.push('}');
+
+			if (/\n/.test(raw)) state.multiline = true;
 		}
 
-		chunks.push(c(quasis[quasis.length - 1].value.raw), c('`'));
+		const raw = quasis[quasis.length - 1].value.raw;
 
-		return chunks;
+		state.commands.push(raw, '`');
+		if (/\n/.test(raw)) state.multiline = true;
 	},
 
 	ThisExpression(node, state) {
-		return [c('this', node)];
+		state.commands.push(c('this', node));
 	},
 
 	ThrowStatement(node, state) {
-		return [c('throw '), ...handle(node.argument, state), c(';')];
+		state.commands.push('throw ');
+		handle(node.argument, state);
+		state.commands.push(';');
 	},
 
 	TryStatement(node, state) {
-		const chunks = [c('try '), ...handle(node.block, state)];
+		state.commands.push('try ');
+		handle(node.block, state);
 
 		if (node.handler) {
 			if (node.handler.param) {
-				chunks.push(c(' catch('));
-				push_array(chunks, handle(node.handler.param, state));
-				chunks.push(c(') '));
+				state.commands.push(' catch(');
+				handle(node.handler.param, state);
+				state.commands.push(') ');
 			} else {
-				chunks.push(c(' catch '));
+				state.commands.push(' catch ');
 			}
 
-			push_array(chunks, handle(node.handler.body, state));
+			handle(node.handler.body, state);
 		}
 
 		if (node.finalizer) {
-			chunks.push(c(' finally '));
-			push_array(chunks, handle(node.finalizer, state));
+			state.commands.push(' finally ');
+			handle(node.finalizer, state);
 		}
-
-		return chunks;
 	},
 
 	UnaryExpression(node, state) {
-		const chunks = [c(node.operator)];
+		state.commands.push(node.operator);
 
 		if (node.operator.length > 1) {
-			chunks.push(c(' '));
+			state.commands.push(' ');
 		}
 
 		if (EXPRESSIONS_PRECEDENCE[node.argument.type] < EXPRESSIONS_PRECEDENCE.UnaryExpression) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.argument, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.argument, state);
+			state.commands.push(')');
 		} else {
-			push_array(chunks, handle(node.argument, state));
+			handle(node.argument, state);
 		}
-
-		return chunks;
 	},
 
 	UpdateExpression(node, state) {
-		return node.prefix
-			? [c(node.operator), ...handle(node.argument, state)]
-			: [...handle(node.argument, state), c(node.operator)];
+		if (node.prefix) {
+			state.commands.push(node.operator);
+			handle(node.argument, state);
+		} else {
+			handle(node.argument, state);
+			state.commands.push(node.operator);
+		}
 	},
 
 	VariableDeclaration(node, state) {
-		return handle_var_declaration(node, state).concat(c(';'));
+		handle_var_declaration(node, state);
+		state.commands.push(';');
 	},
 
 	VariableDeclarator(node, state) {
+		handle(node.id, state);
+
 		if (node.init) {
-			return [...handle(node.id, state), c(' = '), ...handle(node.init, state)];
-		} else {
-			return handle(node.id, state);
+			state.commands.push(' = ');
+			handle(node.init, state);
 		}
 	},
 
 	WhileStatement(node, state) {
-		return [c('while ('), ...handle(node.test, state), c(') '), ...handle(node.body, state)];
+		state.commands.push('while (');
+		handle(node.test, state);
+		state.commands.push(') ');
+		handle(node.body, state);
 	},
 
 	WithStatement(node, state) {
-		return [c('with ('), ...handle(node.object, state), c(') '), ...handle(node.body, state)];
+		state.commands.push('with (');
+		handle(node.object, state);
+		state.commands.push(') ');
+		handle(node.body, state);
 	},
 
 	YieldExpression(node, state) {
 		if (node.argument) {
-			return [c(node.delegate ? `yield* ` : `yield `), ...handle(node.argument, state)];
+			state.commands.push(node.delegate ? `yield* ` : `yield `);
+			handle(node.argument, state);
+		} else {
+			state.commands.push(node.delegate ? `yield*` : `yield`);
 		}
-
-		return [c(node.delegate ? `yield*` : `yield`)];
 	}
 };
