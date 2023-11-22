@@ -333,13 +333,6 @@ function sequence(nodes, state, spaces, fn) {
 
 	const child_state = { ...state, multiline: false };
 
-	let first = true;
-
-	// This is only used for ArrayPattern and ArrayExpression, but
-	// it makes more sense to have the logic here than there, because
-	// otherwise we'd duplicate a lot more stuff
-	let sparse_commas = '';
-
 	let prev;
 
 	for (let i = 0; i < nodes.length; i += 1) {
@@ -372,6 +365,9 @@ function sequence(nodes, state, spaces, fn) {
 				if (!is_last) state.commands.push(join);
 			}
 		} else {
+			// This is only used for ArrayPattern and ArrayExpression, but
+			// it makes more sense to have the logic here than there, because
+			// otherwise we'd duplicate a lot more stuff
 			state.commands.push(',');
 		}
 
