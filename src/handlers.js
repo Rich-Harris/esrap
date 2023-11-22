@@ -232,8 +232,6 @@ const grouped_expression_types = [
  * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
-	const join = create_sequence(newline);
-
 	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
 	let first = true;
 	let needs_margin = false;
@@ -243,7 +241,7 @@ const handle_body = (nodes, state) => {
 
 		const margin = create_sequence();
 
-		if (!first) state.commands.push(margin, join);
+		if (!first) state.commands.push(margin, newline);
 		first = false;
 
 		const leadingComments = statement.leadingComments;
