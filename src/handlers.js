@@ -32,6 +32,9 @@ function measure(commands, from, to = commands.length) {
 			total += command.length;
 		} else if (command.type === 'Chunk') {
 			total += command.content.length;
+		} else if (command.type === 'Sequence') {
+			// assume this is ', '
+			total += 2;
 		}
 	}
 
@@ -290,15 +293,32 @@ const handle_body = (nodes, state) => {
  * @param {import('./types').State} state
  */
 const handle_var_declaration = (node, state) => {
-	state.commands.push(`${node.kind} `);
+	const index = state.commands.length;
+
+	const open = sequence();
+	const join = sequence();
+	const child_state = { ...state, multiline: false };
+
+	state.commands.push(`${node.kind} `, open);
 
 	let first = true;
 
 	for (const d of node.declarations) {
-		if (!first) state.commands.push(', ');
+		if (!first) state.commands.push(join);
 		first = false;
 
-		handle(d, state);
+		handle(d, child_state);
+	}
+
+	const multiline = child_state.multiline || measure(state.commands, index) > 50;
+
+	if (multiline) {
+		state.multiline = true;
+		if (node.declarations.length > 1) open.children.push(indent);
+		join.children.push(',', newline);
+		if (node.declarations.length > 1) state.commands.push(dedent);
+	} else {
+		join.children.push(', ');
 	}
 };
 
@@ -1010,6 +1030,8 @@ const handlers = {
 	},
 
 	ObjectExpression(node, state) {
+		const index = state.commands.length;
+
 		if (node.properties.length === 0) {
 			state.commands.push('{}');
 			return;
@@ -1057,7 +1079,9 @@ const handlers = {
 
 		state.commands.push(close, '}');
 
-		if (child_state.multiline) {
+		const multiline = child_state.multiline || measure(state.commands, index) > 50;
+
+		if (multiline) {
 			state.multiline = true;
 
 			open.children.push(indent, newline);
