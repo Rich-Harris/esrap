@@ -1,5 +1,9 @@
 # esrap changelog
 
+## 1.2.0
+
+- Rewrite for better performance ([#7](https://github.com/Rich-Harris/esrap/pull/7))
+
 ## 1.1.1
 
 - Actually add the changes that were supposed to go in 1.1.0
