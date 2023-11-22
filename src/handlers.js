@@ -974,17 +974,9 @@ const handlers = {
 		if (node.computed) state.commands.push(']');
 
 		state.commands.push('(');
-
-		let first = true;
-
-		for (const p of node.value.params) {
-			if (!first) state.commands.push(', ');
-			first = false;
-
-			handle(p, state);
-		}
-
+		sequence(node.value.params, state, false, handle);
 		state.commands.push(') ');
+
 		handle(node.value.body, state);
 	},
 
