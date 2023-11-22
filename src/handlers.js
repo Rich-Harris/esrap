@@ -270,19 +270,21 @@ const handle_body = (nodes, state) => {
 		}
 
 		margin_bottom = child_state.multiline;
+		let add_newline = false;
 
-		// while (state.comments.length) {
-		// 	const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-		// 	const prefix = add_newline ? `\n${state.indent}` : ` `;
+		while (state.comments.length) {
+			const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
 
-		// 	state.commands.push(
-		// 		c(
-		// 			comment.type === 'Block' ? `${prefix}/*${comment.value}*/` : `${prefix}//${comment.value}`
-		// 		)
-		// 	);
+			if (add_newline) {
+				state.commands.push(newline);
+			} else {
+				state.commands.push(' ');
+			}
 
-		// 	add_newline = comment.type === 'Line';
-		// }
+			state.commands.push(comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`);
+
+			add_newline = comment.type === 'Line';
+		}
 
 		last_statement = statement;
 	}
