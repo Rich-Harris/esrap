@@ -1,6 +1,3 @@
-// heavily based on https://github.com/davidbonnet/astring
-// released under MIT license https://github.com/davidbonnet/astring/blob/master/LICENSE
-
 /** @type {import('./types').Newline} */
 const newline = { type: 'Newline' };
 
