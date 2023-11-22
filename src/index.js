@@ -39,14 +39,14 @@ export function print(node, opts = {}) {
 		);
 	}
 
-	/** @type {import('./types').Command[]} */
-	const commands = [];
-
-	handle(node, {
-		commands,
+	/** @type {import('./types').State} */
+	const state = {
+		commands: [],
 		comments: [],
 		multiline: false
-	});
+	};
+
+	handle(node, state);
 
 	/** @typedef {[number, number, number, number]} Segment */
 
@@ -83,68 +83,64 @@ export function print(node, opts = {}) {
 			return;
 		}
 
-		if (command.type === 'Chunk') {
-			const loc = command.loc;
+		switch (command.type) {
+			case 'Chunk':
+				const loc = command.loc;
 
-			if (loc) {
-				current_line.push([
-					current_column,
-					0, // source index is always zero
-					loc.start.line - 1,
-					loc.start.column
-				]);
-			}
+				if (loc) {
+					current_line.push([
+						current_column,
+						0, // source index is always zero
+						loc.start.line - 1,
+						loc.start.column
+					]);
+				}
 
-			append(command.content);
+				append(command.content);
 
-			if (loc) {
-				current_line.push([
-					current_column,
-					0, // source index is always zero
-					loc.end.line - 1,
-					loc.end.column
-				]);
-			}
+				if (loc) {
+					current_line.push([
+						current_column,
+						0, // source index is always zero
+						loc.end.line - 1,
+						loc.end.column
+					]);
+				}
 
-			return;
-		}
+				break;
 
-		if (command.type === 'Newline') {
-			append(newline);
-			return;
-		}
+			case 'Newline':
+				append(newline);
+				break;
 
-		if (command.type === 'Indent') {
-			newline += '\t';
-			return;
-		}
+			case 'Indent':
+				newline += '\t';
+				break;
 
-		if (command.type === 'Dedent') {
-			newline = newline.slice(0, -1);
-			return;
-		}
+			case 'Dedent':
+				newline = newline.slice(0, -1);
+				break;
 
-		if (command.type === 'Sequence') {
-			for (let i = 0; i < command.children.length; i += 1) {
-				run(command.children[i]);
-			}
+			case 'Sequence':
+				for (let i = 0; i < command.children.length; i += 1) {
+					run(command.children[i]);
+				}
 
-			return;
-		}
+				break;
 
-		if (command.type === 'Comment') {
-			if (command.comment.type === 'Line') {
-				append(`//${command.comment.value}`);
-			} else {
-				append(`/*${command.comment.value.replace(/\n/g, newline)}*/`);
-			}
+			case 'Comment':
+				if (command.comment.type === 'Line') {
+					append(`//${command.comment.value}`);
+				} else {
+					append(`/*${command.comment.value.replace(/\n/g, newline)}*/`);
+				}
 
-			return;
+				break;
 		}
 	}
 
-	for (let i = 0; i < commands.length; i += 1) {
-		run(commands[i]);
+	for (let i = 0; i < state.commands.length; i += 1) {
+		run(state.commands[i]);
 	}
 
 	mappings.push(current_line);
