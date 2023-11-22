@@ -131,7 +131,11 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 
 		Bun.write(
 			`${__dirname}/samples/${dir}/_actual.json`,
-			JSON.stringify(parsed, (value) => (typeof value === 'bigint' ? Number(value) : value), '\t')
+			JSON.stringify(
+				parsed,
+				(key, value) => (typeof value === 'bigint' ? Number(value) : value),
+				'\t'
+			)
 		);
 
 		const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
