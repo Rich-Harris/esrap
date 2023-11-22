@@ -445,7 +445,7 @@ const shared = {
 
 		state.multiline = true;
 
-		state.commands.push(indent, '{', newline);
+		state.commands.push('{', indent, newline);
 		handle_body(node.body, state);
 		state.commands.push(dedent, newline, '}');
 	},
