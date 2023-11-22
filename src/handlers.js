@@ -1233,19 +1233,28 @@ const handlers = {
 		handle(node.discriminant, state);
 		state.commands.push(') {', indent);
 
+		let first = true;
+
 		for (const block of node.cases) {
+			if (!first) state.commands.push('\n');
+			first = false;
+
 			if (block.test) {
-				state.commands.push(`case `);
+				state.commands.push(newline, `case `);
 				handle(block.test, state);
-				state.commands.push(c(':'));
+				state.commands.push(':');
 			} else {
-				state.commands.push(`default:`);
+				state.commands.push(newline, `default:`);
 			}
 
+			state.commands.push(indent);
+
 			for (const statement of block.consequent) {
-				// state.commands.push((`\n${state.indent}\t\t`));
+				state.commands.push(newline);
 				handle(statement, state);
 			}
+
+			state.commands.push(dedent);
 		}
 
 		state.commands.push(dedent, `\n}`);
