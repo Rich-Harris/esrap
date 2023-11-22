@@ -264,23 +264,16 @@ const handle_body = (nodes, state) => {
 			margin.children.push('\n');
 		}
 
-		needs_margin = child_state.multiline;
 		let add_newline = false;
 
 		while (state.comments.length) {
 			const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
 
-			if (add_newline) {
-				state.commands.push(newline);
-			} else {
-				state.commands.push(' ');
-			}
-
-			state.commands.push({ type: 'Comment', comment });
-
+			state.commands.push(add_newline ? newline : ' ', { type: 'Comment', comment });
 			add_newline = comment.type === 'Line';
 		}
 
+		needs_margin = child_state.multiline;
 		last_statement = statement;
 	}
 };
