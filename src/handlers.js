@@ -80,7 +80,7 @@ function c(content, node) {
  */
 function prepend_comments(comments, state) {
 	for (const comment of comments) {
-		state.commands.push(comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`);
+		state.commands.push({ type: 'Comment', comment });
 
 		// @ts-expect-error TODO this is non-standard and weird
 		if (comment.has_trailing_newline) {
@@ -278,7 +278,7 @@ const handle_body = (nodes, state) => {
 				state.commands.push(' ');
 			}
 
-			state.commands.push(comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`);
+			state.commands.push({ type: 'Comment', comment });
 
 			add_newline = comment.type === 'Line';
 		}
@@ -349,16 +349,10 @@ function sequence(nodes, state, spaces, fn) {
 
 				while (state.comments.length) {
 					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-
-					state.commands.push(
-						comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`,
-						newline
-					);
-
-					if (comment.type === 'Line') {
-						child_state.multiline = true;
-					}
+					state.commands.push({ type: 'Comment', comment }, newline);
 				}
+
+				child_state.multiline = true;
 			} else {
 				state.commands.push(join);
 			}
@@ -532,9 +526,7 @@ const shared = {
 					while (state.comments.length) {
 						const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
 
-						state.commands.push(
-							comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`
-						);
+						state.commands.push({ type: 'Comment', comment });
 
 						if (comment.type === 'Line') {
 							child_state.multiline = true;

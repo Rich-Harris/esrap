@@ -62,7 +62,7 @@ function load(input) {
 
 /** @param {import('estree').Node} ast */
 function clean(ast) {
-	return walk(ast, null, {
+	const cleaned = walk(ast, null, {
 		_(node, context) {
 			delete node.loc;
 			delete node.start;
@@ -78,8 +78,25 @@ function clean(ast) {
 		BlockStatement(node, context) {
 			node.body = node.body.filter((node) => node.type !== 'EmptyStatement');
 			context.next();
+		},
+		Property(node, context) {
+			if (node.kind === 'init') {
+				if (node.value.type === 'FunctionExpression') {
+					node.method = true;
+				}
+
+				const value = node.value.type === 'AssignmentPattern' ? node.value.left : node.value;
+
+				if (!node.computed && node.key.type === 'Identifier' && value.type === 'Identifier') {
+					node.shorthand = node.key.name === value.name;
+				}
+			}
+
+			context.next();
 		}
 	});
+
+	return cleaned;
 }
 
 for (const dir of fs.readdirSync(`${__dirname}/samples`)) {

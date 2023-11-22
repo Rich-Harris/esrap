@@ -131,6 +131,16 @@ export function print(node, opts = {}) {
 
 			return;
 		}
+
+		if (command.type === 'Comment') {
+			if (command.comment.type === 'Line') {
+				append(`//${command.comment.value}`);
+			} else {
+				append(`/*${command.comment.value.replace(/\n/g, newline)}*/`);
+			}
+
+			return;
+		}
 	}
 
 	for (let i = 0; i < commands.length; i += 1) {

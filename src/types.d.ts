@@ -45,4 +45,9 @@ export interface Sequence {
 	children: Command[];
 }
 
-export type Command = string | Chunk | Newline | Indent | Dedent | Sequence;
+export interface CommentChunk {
+	type: 'Comment';
+	comment: Comment;
+}
+
+export type Command = string | Chunk | Newline | Indent | Dedent | Sequence | CommentChunk;
