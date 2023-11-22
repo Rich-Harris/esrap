@@ -998,14 +998,11 @@ const handlers = {
 				if (p.computed) state.commands.push('[');
 				handle(p.key, state);
 				if (p.computed) state.commands.push(']');
+
 				state.commands.push('(');
-
-				for (let i = 0; i < fn.params.length; i += 1) {
-					if (i > 0) state.commands.push(', ');
-					handle(fn.params[i], state);
-				}
-
+				sequence(fn.params, state, false, handle);
 				state.commands.push(') ');
+
 				handle(fn.body, state);
 			} else {
 				handle(p, state);

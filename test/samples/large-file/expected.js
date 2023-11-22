@@ -4489,7 +4489,13 @@
 					jQuery.event.global[type] = true;
 				}
 			},
-			remove(elem, types, handler, selector, mappedTypes) {
+			remove(
+				elem,
+				types,
+				handler,
+				selector,
+				mappedTypes
+			) {
 				var j,
 					origCount,
 					tmp,
