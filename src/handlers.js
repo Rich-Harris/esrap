@@ -821,6 +821,7 @@ const handlers = {
 			state.commands.push('(');
 			handle(node.expression, state);
 			state.commands.push(');');
+			return;
 		}
 
 		handle(node.expression, state);
