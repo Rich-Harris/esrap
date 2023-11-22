@@ -39,19 +39,6 @@ function measure(commands, from, to = commands.length) {
 }
 
 /**
- * Does `array.push` for all `items`. Needed because `array.push(...items)` throws
- * "Maximum call stack size exceeded" when `items` is too big of an array.
- *
- * @param {any[]} array
- * @param {any[]} items
- */
-function push_array(array, items) {
-	for (let i = 0; i < items.length; i++) {
-		array.push(items[i]);
-	}
-}
-
-/**
  * @param {import('estree').Node} node
  * @param {import('./types').State} state
  */
@@ -92,21 +79,16 @@ function c(content, node) {
  * @param {import('./types').State} state
  */
 function prepend_comments(comments, state) {
-	state.commands.push(
-		c(
-			comments
-				.map((comment) =>
-					comment.type === 'Block'
-						? `/*${comment.value}*/${
-								/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
-						  }`
-						: `//${comment.value}${
-								/** @type {any} */ (comment).has_trailing_newline ? `\n${state.indent}` : ` `
-						  }`
-				)
-				.join(``)
-		)
-	);
+	for (const comment of comments) {
+		state.commands.push(comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`);
+
+		// TODO this is non-standard and weird
+		if (comment.has_trailing_newline) {
+			state.commands.push(newline);
+		} else {
+			state.commands.push(' ');
+		}
+	}
 }
 
 const OPERATOR_PRECEDENCE = {
@@ -237,45 +219,6 @@ function has_call_expression(node) {
 		}
 	}
 }
-
-/** @param {import('./types').Chunk[]} chunks */
-const has_newline = (chunks) => {
-	for (let i = 0; i < chunks.length; i += 1) {
-		if (chunks[i].has_newline) return true;
-	}
-	return false;
-};
-
-/** @param {import('./types').Chunk[]} chunks */
-const get_length = (chunks) => {
-	let total = 0;
-	for (let i = 0; i < chunks.length; i += 1) {
-		total += chunks[i].content.length;
-	}
-	return total;
-};
-
-/**
- * @param {number} a
- * @param {number} b
- */
-const sum = (a, b) => a + b;
-
-/**
- * @param {import('./types').Chunk[][]} nodes
- * @param {import('./types').Chunk} separator
- * @returns {import('./types').Chunk[]}
- */
-const join = (nodes, separator) => {
-	if (nodes.length === 0) return [];
-
-	const joined = [...nodes[0]];
-	for (let i = 1; i < nodes.length; i += 1) {
-		joined.push(separator);
-		push_array(joined, nodes[i]);
-	}
-	return joined;
-};
 
 const grouped_expression_types = [
 	'ImportDeclaration',
@@ -502,20 +445,20 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'ForInStatement|ForOfStatement': (node, state) => {
-		const chunks = [c(`for ${node.type === 'ForOfStatement' && node.await ? 'await ' : ''}(`)];
+		state.commands.push('for ');
+		if (node.type === 'ForOfStatement' && node.await) state.commands.push('await ');
+		state.commands.push('(');
 
 		if (node.left.type === 'VariableDeclaration') {
-			push_array(chunks, handle_var_declaration(node.left, state));
+			handle_var_declaration(node.left, state);
 		} else {
-			push_array(chunks, handle(node.left, state));
+			handle(node.left, state);
 		}
 
-		chunks.push(c(node.type === 'ForInStatement' ? ` in ` : ` of `));
-		push_array(chunks, handle(node.right, state));
-		chunks.push(c(') '));
-		push_array(chunks, handle(node.body, state));
-
-		return chunks;
+		state.commands.push(node.type === 'ForInStatement' ? ` in ` : ` of `);
+		handle(node.right, state);
+		state.commands.push(') ');
+		handle(node.body, state);
 	},
 
 	/**
@@ -543,7 +486,8 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'RestElement|SpreadElement': (node, state) => {
-		return [c('...'), ...handle(node.argument, state)];
+		state.commands.push('...');
+		handle(node.argument, state);
 	}
 };
 
@@ -670,42 +614,33 @@ const handlers = {
 	ClassExpression: shared['ClassDeclaration|ClassExpression'],
 
 	ConditionalExpression(node, state) {
-		/**
-		 * @type any[]
-		 */
-		const chunks = [];
-
 		if (EXPRESSIONS_PRECEDENCE[node.test.type] > EXPRESSIONS_PRECEDENCE.ConditionalExpression) {
-			push_array(chunks, handle(node.test, state));
+			handle(node.test, state);
 		} else {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.test, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.test, state);
+			state.commands.push(')');
 		}
 
-		const child_state = { ...state, indent: state.indent + '\t' };
+		const if_true = sequence();
+		const if_false = sequence();
 
-		const consequent = handle(node.consequent, child_state);
-		const alternate = handle(node.alternate, child_state);
+		const child_state = { ...state, multiline: false };
 
-		const multiple_lines =
-			has_newline(consequent) ||
-			has_newline(alternate) ||
-			get_length(chunks) + get_length(consequent) + get_length(alternate) > 50;
+		state.commands.push(if_true);
+		handle(node.consequent, child_state);
+		state.commands.push(if_false);
+		handle(node.alternate, child_state);
 
-		if (multiple_lines) {
-			chunks.push(c(`\n${state.indent}? `));
-			push_array(chunks, consequent);
-			chunks.push(c(`\n${state.indent}: `));
-			push_array(chunks, alternate);
+		const multiline = child_state.multiline;
+
+		if (multiline) {
+			if_true.children.push(indent, newline, '? ');
+			if_false.children.push(newline, ': ');
 		} else {
-			chunks.push(c(` ? `));
-			push_array(chunks, consequent);
-			chunks.push(c(` : `));
-			push_array(chunks, alternate);
+			if_true.children.push(' ? ');
+			if_false.children.push(' : ');
 		}
-
-		return chunks;
 	},
 
 	ContinueStatement(node, state) {
@@ -735,17 +670,19 @@ const handlers = {
 	},
 
 	ExportAllDeclaration(node, state) {
-		return [c(`export * from `), ...handle(node.source, state), c(`;`)];
+		state.commands.push('export * from ');
+		handle(node.source, state);
+		state.commands.push(';');
 	},
 
 	ExportDefaultDeclaration(node, state) {
-		const chunks = [c(`export default `), ...handle(node.declaration, state)];
+		state.commands.push('export default ');
+
+		handle(node.declaration, state);
 
 		if (node.declaration.type !== 'FunctionDeclaration') {
-			chunks.push(c(';'));
+			state.commands.push(';');
 		}
-
-		return chunks;
 	},
 
 	ExportNamedDeclaration(node, state) {
@@ -815,7 +752,9 @@ const handlers = {
 			node.expression.left.type === 'ObjectPattern'
 		) {
 			// is an AssignmentExpression to an ObjectPattern
-			return [c('('), ...handle(node.expression, state), c(');')];
+			state.commands.push('(');
+			handle(node.expression, state);
+			state.commands.push(');');
 		}
 
 		handle(node.expression, state);
@@ -1005,78 +944,69 @@ const handlers = {
 	},
 
 	MethodDefinition(node, state) {
-		const chunks = [];
-
 		if (node.static) {
-			chunks.push(c('static '));
+			state.commands.push('static ');
 		}
 
 		if (node.kind === 'get' || node.kind === 'set') {
 			// Getter or setter
-			chunks.push(c(node.kind + ' '));
+			state.commands.push(node.kind + ' ');
 		}
 
 		if (node.value.async) {
-			chunks.push(c('async '));
+			state.commands.push('async ');
 		}
 
 		if (node.value.generator) {
-			chunks.push(c('*'));
+			state.commands.push('*');
 		}
 
-		if (node.computed) {
-			chunks.push(c('['));
-			push_array(chunks, handle(node.key, state));
-			chunks.push(c(']'));
-		} else {
-			push_array(chunks, handle(node.key, state));
+		if (node.computed) state.commands.push('[');
+		handle(node.key, state);
+		if (node.computed) state.commands.push(']');
+
+		state.commands.push('(');
+
+		let first = true;
+
+		for (const p of node.value.params) {
+			if (!first) state.commands.push(', ');
+			first = false;
+
+			handle(p, state);
 		}
 
-		chunks.push(c('('));
-
-		const { params } = node.value;
-		for (let i = 0; i < params.length; i += 1) {
-			push_array(chunks, handle(params[i], state));
-			if (i < params.length - 1) chunks.push(c(', '));
-		}
-
-		chunks.push(c(') '));
-		push_array(chunks, handle(node.value.body, state));
-
-		return chunks;
+		state.commands.push(') ');
+		handle(node.value.body, state);
 	},
 
 	NewExpression(node, state) {
-		const chunks = [c('new ')];
+		state.commands.push('new ');
 
 		if (
 			EXPRESSIONS_PRECEDENCE[node.callee.type] < EXPRESSIONS_PRECEDENCE.CallExpression ||
 			has_call_expression(node.callee)
 		) {
-			chunks.push(c('('));
-			push_array(chunks, handle(node.callee, state));
-			chunks.push(c(')'));
+			state.commands.push('(');
+			handle(node.callee, state);
+			state.commands.push(')');
 		} else {
-			push_array(chunks, handle(node.callee, state));
+			handle(node.callee, state);
 		}
 
-		// TODO this is copied from CallExpression — DRY it out
-		const args = node.arguments.map((arg) =>
-			handle(arg, {
-				...state,
-				indent: state.indent + '\t'
-			})
-		);
+		state.commands.push('(');
 
-		const separator = args.some(has_newline) // TODO or length exceeds 80
-			? c(',\n' + state.indent)
-			: c(', ');
+		let first = true;
 
-		chunks.push(c('('));
-		push_array(chunks, join(args, separator));
-		chunks.push(c(')'));
+		// TODO handle multiline
+		for (const a of node.arguments) {
+			if (!first) state.commands.push(', ');
+			first = false;
 
-		return chunks;
+			handle(a, state);
+		}
+
+		state.commands.push(')');
 	},
 
 	ObjectExpression(node, state) {
@@ -1201,11 +1131,7 @@ const handlers = {
 	},
 
 	PrivateIdentifier(node, state) {
-		const chunks = [c('#')];
-
-		push_array(chunks, [c(node.name, node)]);
-
-		return chunks;
+		state.commands.push('#', c(node.name, node));
 	},
 
 	Program(node, state) {
