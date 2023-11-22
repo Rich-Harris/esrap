@@ -452,7 +452,7 @@ const shared = {
 
 		const needs_parens =
 			EXPRESSIONS_PRECEDENCE[node.callee.type] < EXPRESSIONS_PRECEDENCE.CallExpression ||
-			has_call_expression(node.callee);
+			(node.type === 'NewExpression' && has_call_expression(node.callee));
 
 		if (needs_parens) {
 			state.commands.push('(');
