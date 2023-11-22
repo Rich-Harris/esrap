@@ -324,6 +324,68 @@ const handle_var_declaration = (node, state) => {
 	}
 };
 
+/**
+ * @template {import('estree').Node} T
+ * @param {T[]} nodes
+ * @param {import('./types').State} state
+ * @param {boolean} spaces
+ * @param {(node: T, state: import('./types').State) => void} fn
+ */
+function sequence(nodes, state, spaces, fn) {
+	if (nodes.length === 0) return;
+
+	const index = state.commands.length;
+
+	const open = create_sequence();
+	const join = create_sequence();
+	const close = create_sequence();
+
+	state.commands.push(open);
+
+	const child_state = { ...state, multiline: false };
+
+	for (let i = 0; i < nodes.length; i += 1) {
+		if (i > 0) {
+			if (state.comments.length > 0) {
+				state.commands.push(', ');
+
+				while (state.comments.length) {
+					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+
+					state.commands.push(
+						comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`,
+						newline
+					);
+
+					if (comment.type === 'Line') {
+						child_state.multiline = true;
+					}
+				}
+			} else {
+				state.commands.push(join);
+			}
+		}
+
+		fn(nodes[i], child_state);
+	}
+
+	state.commands.push(close);
+
+	const multiline = child_state.multiline || measure(state.commands, index) > 50;
+
+	if (multiline) {
+		state.multiline = true;
+
+		open.children.push(indent, newline);
+		join.children.push(',', newline);
+		close.children.push(dedent, newline);
+	} else {
+		if (spaces) open.children.push(' ');
+		join.children.push(', ');
+		if (spaces) close.children.push(' ');
+	}
+}
+
 const shared = {
 	/**
 	 * @param {import('estree').ArrayExpression | import('estree').ArrayPattern} node
@@ -552,38 +614,13 @@ const shared = {
 	 * @param {import('./types').State} state
 	 */
 	'FunctionDeclaration|FunctionExpression': (node, state) => {
-		const index = state.commands.length;
-
 		if (node.async) state.commands.push(c('async '));
 		state.commands.push(c(node.generator ? 'function* ' : 'function '));
 		if (node.id) handle(node.id, state);
 
-		const open = create_sequence();
-		const join = create_sequence();
-		const close = create_sequence();
-
-		state.commands.push('(', open);
-
-		const child_state = { ...state, multiline: false };
-
-		for (let i = 0; i < node.params.length; i += 1) {
-			if (i > 0) state.commands.push(join);
-			handle(node.params[i], state);
-		}
-
-		state.commands.push(close, ') ');
-
-		const multiline = child_state.multiline || measure(state.commands, index) > 50;
-
-		if (multiline) {
-			state.multiline = true;
-
-			open.children.push(indent, newline);
-			join.children.push(',', newline);
-			close.children.push(dedent, newline);
-		} else {
-			join.children.push(', ');
-		}
+		state.commands.push('(');
+		sequence(node.params, state, false, handle);
+		state.commands.push(') ');
 
 		handle(node.body, state);
 	},
@@ -931,37 +968,15 @@ const handlers = {
 		if (named_specifiers.length > 0) {
 			if (default_specifier) state.commands.push(', ');
 
-			const open = create_sequence();
-			const join = create_sequence();
-			const close = create_sequence();
-
-			let first = true;
-
-			state.commands.push('{', open);
-			for (const s of named_specifiers) {
-				if (!first) state.commands.push(join);
-				first = false;
-
+			state.commands.push('{');
+			sequence(named_specifiers, state, true, (s, state) => {
 				if (s.local.name === s.imported.name) {
 					state.commands.push(c(s.local.name, s.local));
 				} else {
 					state.commands.push(c(s.imported.name, s.imported), ' as ', c(s.local.name, s.local));
 				}
-			}
-
-			state.commands.push(close, '}');
-
-			const multiline = measure(state.commands, index) > 50;
-
-			if (multiline) {
-				open.children.push(indent, newline);
-				join.children.push(',', newline);
-				close.children.push(dedent, newline);
-			} else {
-				open.children.push(' ');
-				join.children.push(', ');
-				close.children.push(' ');
-			}
+			});
+			state.commands.push('}');
 		}
 
 		state.commands.push(' from ');
@@ -1066,45 +1081,8 @@ const handlers = {
 	NewExpression: shared['CallExpression|NewExpression'],
 
 	ObjectExpression(node, state) {
-		const index = state.commands.length;
-
-		if (node.properties.length === 0) {
-			state.commands.push('{}');
-			return;
-		}
-
-		const open = create_sequence();
-		const join = create_sequence();
-		const close = create_sequence();
-
-		state.commands.push('{', open);
-
-		const child_state = { ...state, multiline: false };
-
-		for (let i = 0; i < node.properties.length; i += 1) {
-			const p = node.properties[i];
-
-			if (i > 0) {
-				if (state.comments.length > 0) {
-					state.commands.push(', ');
-
-					while (state.comments.length) {
-						const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-
-						state.commands.push(
-							comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`,
-							newline
-						);
-
-						if (comment.type === 'Line') {
-							child_state.multiline = true;
-						}
-					}
-				} else {
-					state.commands.push(join);
-				}
-			}
-
+		state.commands.push('{');
+		sequence(node.properties, state, true, (p, state) => {
 			if (p.type === 'Property' && p.value.type === 'FunctionExpression') {
 				const fn = /** @type {import('estree').FunctionExpression} */ (p.value);
 
@@ -1116,92 +1094,28 @@ const handlers = {
 				}
 
 				if (p.computed) state.commands.push('[');
-				handle(p.key, child_state);
+				handle(p.key, state);
 				if (p.computed) state.commands.push(']');
 				state.commands.push('(');
 
 				for (let i = 0; i < fn.params.length; i += 1) {
 					if (i > 0) state.commands.push(', ');
-					handle(fn.params[i], child_state);
+					handle(fn.params[i], state);
 				}
 
 				state.commands.push(') ');
-				handle(fn.body, child_state);
+				handle(fn.body, state);
 			} else {
-				handle(p, child_state);
+				handle(p, state);
 			}
-		}
-
-		state.commands.push(close, '}');
-
-		const multiline = child_state.multiline || measure(state.commands, index) > 50;
-
-		if (multiline) {
-			state.multiline = true;
-
-			open.children.push(indent, newline);
-			join.children.push(',', newline);
-			close.children.push(dedent, newline);
-		} else {
-			open.children.push(' ');
-			join.children.push(', ');
-			close.children.push(' ');
-		}
-
-		return;
-
-		// node.properties.forEach((p, i) => {
-		// 	handle(p, state);
-
-		// 	if (state.comments.length) {
-		// 		// TODO generalise this, so it works with ArrayExpressions and other things.
-		// 		// At present, stuff will just get appended to the closest statement/declaration
-		// 		chunks.push(c(', '));
-
-		// 		while (state.comments.length) {
-		// 			const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
-
-		// 			chunks.push(
-		// 				c(
-		// 					comment.type === 'Block'
-		// 						? `/*${comment.value}*/\n${state.indent}\t`
-		// 						: `//${comment.value}\n${state.indent}\t`
-		// 				)
-		// 			);
-
-		// 			if (comment.type === 'Line') {
-		// 				has_inline_comment = true;
-		// 			}
-		// 		}
-		// 	} else {
-		// 		if (i < node.properties.length - 1) {
-		// 			chunks.push(separator);
-		// 		}
-		// 	}
-		// });
-
-		// const multiple_lines = has_inline_comment || has_newline(chunks) || get_length(chunks) > 40;
-
-		// if (multiple_lines) {
-		// 	separator.content = `,\n${state.indent}\t`;
-		// }
-
-		// return [
-		// 	c(multiple_lines ? `{\n${state.indent}\t` : `{ `),
-		// 	...chunks,
-		// 	c(multiple_lines ? `\n${state.indent}}` : ` }`)
-		// ];
+		});
+		state.commands.push('}');
 	},
 
 	ObjectPattern(node, state) {
-		state.commands.push('{ ');
-
-		for (let i = 0; i < node.properties.length; i += 1) {
-			handle(node.properties[i], state);
-			if (i < node.properties.length - 1) state.commands.push(c(', '));
-		}
-
-		state.commands.push(' }');
+		state.commands.push('{');
+		sequence(node.properties, state, true, handle);
+		state.commands.push('}');
 	},
 
 	// @ts-expect-error this isn't a real node type, but Acorn produces it
