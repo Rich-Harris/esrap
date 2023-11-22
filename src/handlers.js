@@ -236,7 +236,7 @@ const handle_body = (nodes, state) => {
 
 	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
 	let first = true;
-	let margin_bottom = false;
+	let needs_margin = false;
 
 	for (const statement of nodes) {
 		if (statement.type === 'EmptyStatement') continue;
@@ -258,7 +258,7 @@ const handle_body = (nodes, state) => {
 
 		if (
 			child_state.multiline ||
-			margin_bottom ||
+			needs_margin ||
 			((grouped_expression_types.includes(statement.type) ||
 				grouped_expression_types.includes(last_statement.type)) &&
 				last_statement.type !== statement.type)
@@ -266,7 +266,7 @@ const handle_body = (nodes, state) => {
 			margin.children.push('\n');
 		}
 
-		margin_bottom = child_state.multiline;
+		needs_margin = child_state.multiline;
 		let add_newline = false;
 
 		while (state.comments.length) {
