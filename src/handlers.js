@@ -14,7 +14,7 @@ const dedent = { type: 'Dedent' };
  * @param {import('./types').Command[]} children
  * @returns {import('./types').Sequence}
  */
-function sequence(...children) {
+function create_sequence(...children) {
 	return { type: 'Sequence', children };
 }
 
@@ -235,7 +235,7 @@ const grouped_expression_types = [
  * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
-	const join = sequence(newline);
+	const join = create_sequence(newline);
 
 	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
 	let first = true;
@@ -244,7 +244,7 @@ const handle_body = (nodes, state) => {
 	for (const statement of nodes) {
 		if (statement.type === 'EmptyStatement') continue;
 
-		const margin = sequence();
+		const margin = create_sequence();
 
 		if (!first) state.commands.push(margin, join);
 		first = false;
@@ -297,8 +297,8 @@ const handle_body = (nodes, state) => {
 const handle_var_declaration = (node, state) => {
 	const index = state.commands.length;
 
-	const open = sequence();
-	const join = sequence();
+	const open = create_sequence();
+	const join = create_sequence();
 	const child_state = { ...state, multiline: false };
 
 	state.commands.push(`${node.kind} `, open);
@@ -337,9 +337,9 @@ const shared = {
 
 		const child_state = { ...state, multiline: false };
 
-		const open = sequence();
-		const join = sequence();
-		const close = sequence();
+		const open = create_sequence();
+		const join = create_sequence();
+		const close = create_sequence();
 
 		state.commands.push('[', open);
 
@@ -470,9 +470,9 @@ const shared = {
 			state.commands.push('?.');
 		}
 
-		const open = sequence();
-		const join = sequence();
-		const close = sequence();
+		const open = create_sequence();
+		const join = create_sequence();
+		const close = create_sequence();
 
 		state.commands.push('(', open);
 
@@ -558,9 +558,9 @@ const shared = {
 		state.commands.push(c(node.generator ? 'function* ' : 'function '));
 		if (node.id) handle(node.id, state);
 
-		const open = sequence();
-		const join = sequence();
-		const close = sequence();
+		const open = create_sequence();
+		const join = create_sequence();
+		const close = create_sequence();
 
 		state.commands.push('(', open);
 
@@ -705,8 +705,8 @@ const handlers = {
 			state.commands.push(')');
 		}
 
-		const if_true = sequence();
-		const if_false = sequence();
+		const if_true = create_sequence();
+		const if_false = create_sequence();
 
 		const child_state = { ...state, multiline: false };
 
@@ -781,9 +781,9 @@ const handlers = {
 			return;
 		}
 
-		const open = sequence();
-		const join = sequence();
-		const close = sequence();
+		const open = create_sequence();
+		const join = create_sequence();
+		const close = create_sequence();
 
 		state.commands.push('{', open);
 
@@ -931,9 +931,9 @@ const handlers = {
 		if (named_specifiers.length > 0) {
 			if (default_specifier) state.commands.push(', ');
 
-			const open = sequence();
-			const join = sequence();
-			const close = sequence();
+			const open = create_sequence();
+			const join = create_sequence();
+			const close = create_sequence();
 
 			let first = true;
 
@@ -1073,9 +1073,9 @@ const handlers = {
 			return;
 		}
 
-		const open = sequence();
-		const join = sequence();
-		const close = sequence();
+		const open = create_sequence();
+		const join = create_sequence();
+		const close = create_sequence();
 
 		state.commands.push('{', open);
 
