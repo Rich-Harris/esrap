@@ -19,6 +19,26 @@ function sequence(...children) {
 }
 
 /**
+ * Rough estimate of the combined width of a group of commands
+ * @param {import('./types').Command[]} commands
+ * @param {number} from
+ * @param {number} to
+ */
+function measure(commands, from, to = commands.length) {
+	let total = 0;
+	for (let i = from; i < to; i += 1) {
+		const command = commands[i];
+		if (typeof command === 'string') {
+			total += command.length;
+		} else if (command.type === 'Chunk') {
+			total += command.content.length;
+		}
+	}
+
+	return total;
+}
+
+/**
  * Does `array.push` for all `items`. Needed because `array.push(...items)` throws
  * "Maximum call stack size exceeded" when `items` is too big of an array.
  *
@@ -848,74 +868,89 @@ const handlers = {
 	},
 
 	ImportDeclaration(node, state) {
-		state.commands.push('import ');
-
-		const { length } = node.specifiers;
-		const source = handle(node.source, state);
-
-		if (length > 0) {
-			let i = 0;
-
-			while (i < length) {
-				if (i > 0) {
-					state.commands.push(', ');
-				}
-
-				const specifier = node.specifiers[i];
-
-				if (specifier.type === 'ImportDefaultSpecifier') {
-					state.commands.push(c(specifier.local.name, specifier));
-					i += 1;
-				} else if (specifier.type === 'ImportNamespaceSpecifier') {
-					state.commands.push(c('* as ' + specifier.local.name, specifier));
-					i += 1;
-				} else {
-					break;
-				}
-			}
-
-			if (i < length) {
-				// we have named specifiers
-				const specifiers = /** @type {import('estree').ImportSpecifier[]} */ (node.specifiers)
-					.slice(i)
-					.map((specifier) => {
-						const name = handle(specifier.imported, state)[0];
-						const as = handle(specifier.local, state)[0];
-
-						if (name.content === as.content) {
-							return [as];
-						}
-
-						return [name, c(' as '), as];
-					});
-
-				const width =
-					get_length(chunks) +
-					specifiers.map(get_length).reduce(sum, 0) +
-					2 * specifiers.length +
-					6 +
-					get_length(source);
-
-				if (width > 80) {
-					chunks.push(c(`{\n\t`));
-					push_array(chunks, join(specifiers, c(',\n\t')));
-					chunks.push(c('\n}'));
-				} else {
-					chunks.push(c(`{ `));
-					push_array(chunks, join(specifiers, c(', ')));
-					chunks.push(c(' }'));
-				}
-			}
-
-			chunks.push(c(' from '));
+		if (node.specifiers.length === 0) {
+			state.commands.push('import ');
+			handle(node.source, state);
+			state.commands.push(';');
+			return;
 		}
 
-		push_array(chunks, source);
-		chunks.push(c(';'));
+		/** @type {import('estree').ImportNamespaceSpecifier | null} */
+		let namespace_specifier = null;
+
+		/** @type {import('estree').ImportDefaultSpecifier | null} */
+		let default_specifier = null;
+
+		/** @type {import('estree').ImportSpecifier[]} */
+		const named_specifiers = [];
+
+		for (const s of node.specifiers) {
+			if (s.type === 'ImportNamespaceSpecifier') {
+				namespace_specifier = s;
+			} else if (s.type === 'ImportDefaultSpecifier') {
+				default_specifier = s;
+			} else {
+				named_specifiers.push(s);
+			}
+		}
+
+		const index = state.commands.length;
+
+		state.commands.push('import ');
+
+		if (namespace_specifier) {
+			state.commands.push(c('* as ' + namespace_specifier.local.name, namespace_specifier));
+		}
+
+		if (default_specifier) {
+			state.commands.push(c(default_specifier.local.name, default_specifier));
+		}
+
+		if (named_specifiers.length > 0) {
+			if (default_specifier) state.commands.push(', ');
+
+			const open = sequence();
+			const join = sequence();
+			const close = sequence();
+
+			let first = true;
+
+			state.commands.push('{', open);
+			for (const s of named_specifiers) {
+				if (!first) state.commands.push(join);
+				first = false;
+
+				if (s.local.name === s.imported.name) {
+					state.commands.push(c(s.local.name, s.local));
+				} else {
+					state.commands.push(c(s.imported.name, s.imported), ' as ', c(s.local.name, s.local));
+				}
+			}
+
+			state.commands.push(close, '}');
+
+			const multiline = measure(state.commands, index) > 50;
+
+			if (multiline) {
+				open.children.push(indent, newline);
+				join.children.push(',', newline);
+				close.children.push(dedent, newline);
+			} else {
+				open.children.push(' ');
+				join.children.push(', ');
+				close.children.push(' ');
+			}
+		}
+
+		state.commands.push(' from ');
+		handle(node.source, state);
+		state.commands.push(';');
 	},
 
 	ImportExpression(node, state) {
-		return [c('import('), ...handle(node.source, state), c(')')];
+		state.commands.push('import(');
+		handle(node.source, state);
+		state.commands.push(')');
 	},
 
 	LabeledStatement(node, state) {
