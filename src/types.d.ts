@@ -40,16 +40,9 @@ export interface IndentChange {
 	offset: number;
 }
 
-export interface Conditional {
-	type: 'Conditional';
-	condition: boolean;
-	consequent: Command;
-	alternate: Command;
-}
-
 export interface Sequence {
 	type: 'Sequence';
 	children: Command[];
 }
 
-export type Command = string | Chunk | Newline | Indent | Dedent | Conditional | Sequence;
+export type Command = string | Chunk | Newline | Indent | Dedent | Sequence;

@@ -124,16 +124,6 @@ export function print(node, opts = {}) {
 			return;
 		}
 
-		if (command.type === 'Conditional') {
-			if (command.condition) {
-				run(command.consequent);
-			} else if (command.alternate) {
-				run(command.alternate);
-			}
-
-			return;
-		}
-
 		if (command.type === 'Sequence') {
 			for (let i = 0; i < command.children.length; i += 1) {
 				run(command.children[i]);
