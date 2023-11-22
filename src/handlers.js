@@ -554,7 +554,7 @@ const shared = {
 
 		state.commands.push(close, ')');
 
-		const multiline = child_state.multiline || measure(state.commands, index) > 80;
+		const multiline = child_state.multiline;
 
 		if (multiline || final_state.multiline) {
 			state.multiline = true;
