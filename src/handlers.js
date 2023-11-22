@@ -813,57 +813,24 @@ const handlers = {
 			return;
 		}
 
-		if (node.specifiers.length === 0) {
-			state.commands.push('{};');
-			return;
-		}
-
-		const open = create_sequence();
-		const join = create_sequence();
-		const close = create_sequence();
-
-		state.commands.push('{', open);
-
-		let first = true;
-		let width = 9;
-
-		for (const s of node.specifiers) {
-			if (!first) state.commands.push(join);
-			first = false;
-
+		state.commands.push('{');
+		sequence(node.specifiers, state, true, (s, state) => {
 			if (s.local.name === s.exported.name) {
 				handle(s.local, state);
-				width += s.local.name.length;
 			} else {
 				handle(s.local, state);
 				state.commands.push(' as ');
 				handle(s.exported, state);
-				width += s.local.name.length + 4 + s.exported.name.length;
 			}
-		}
+		});
+		state.commands.push('}');
 
 		if (node.source) {
 			state.commands.push(' from ');
 			handle(node.source, state);
-
-			width += 8 + /** @type {string} */ (node.source.value).length;
 		}
 
-		const multiline = false; // TODO
-
-		if (multiline) {
-			state.multiline = true;
-
-			open.children.push(indent, newline);
-			join.children.push(',', newline);
-			close.children.push(dedent, newline);
-		} else {
-			open.children.push(' ');
-			join.children.push(', ');
-			close.children.push(' ');
-		}
-
-		state.commands.push(close, '};');
+		state.commands.push(';');
 	},
 
 	ExpressionStatement(node, state) {
