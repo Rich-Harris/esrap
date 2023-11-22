@@ -1081,10 +1081,29 @@ const handlers = {
 
 		const child_state = { ...state, multiline: false };
 
-		let first = true;
-		for (const p of node.properties) {
-			if (!first) state.commands.push(join);
-			first = false;
+		for (let i = 0; i < node.properties.length; i += 1) {
+			const p = node.properties[i];
+
+			if (i > 0) {
+				if (state.comments.length > 0) {
+					state.commands.push(', ');
+
+					while (state.comments.length) {
+						const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+
+						state.commands.push(
+							comment.type === 'Block' ? `/*${comment.value}*/` : `//${comment.value}`,
+							newline
+						);
+
+						if (comment.type === 'Line') {
+							child_state.multiline = true;
+						}
+					}
+				} else {
+					state.commands.push(join);
+				}
+			}
 
 			if (p.type === 'Property' && p.value.type === 'FunctionExpression') {
 				const fn = /** @type {import('estree').FunctionExpression} */ (p.value);
