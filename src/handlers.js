@@ -1063,24 +1063,24 @@ const handlers = {
 			if (!first) state.commands.push(join);
 			first = false;
 
-			if (p.type === 'Property' && p.method) {
+			if (p.type === 'Property' && p.value.type === 'FunctionExpression') {
 				const fn = /** @type {import('estree').FunctionExpression} */ (p.value);
 
-				if (fn.async) state.commands.push('async ');
-				if (fn.generator) state.commands.push('*');
+				if (p.kind === 'get' || p.kind === 'set') {
+					state.commands.push(p.kind + ' ');
+				} else {
+					if (fn.async) state.commands.push('async ');
+					if (fn.generator) state.commands.push('*');
+				}
 
 				if (p.computed) state.commands.push('[');
 				handle(p.key, child_state);
 				if (p.computed) state.commands.push(']');
 				state.commands.push('(');
 
-				let first = true;
-
-				for (const param of fn.params) {
-					if (!first) state.commands.push(', ');
-					first = false;
-
-					handle(param, child_state);
+				for (let i = 0; i < fn.params.length; i += 1) {
+					if (i > 0) state.commands.push(', ');
+					handle(fn.params[i], child_state);
 				}
 
 				state.commands.push(') ');
