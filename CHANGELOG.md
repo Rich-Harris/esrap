@@ -1,5 +1,9 @@
 # esrap changelog
 
+## 1.2.1
+
+- Support default and namespace import in same declaration ([#8](https://github.com/Rich-Harris/esrap/pull/8))
+
 ## 1.2.0
 
 - Rewrite for better performance ([#7](https://github.com/Rich-Harris/esrap/pull/7))
