@@ -871,17 +871,16 @@ const handlers = {
 
 		state.commands.push('import ');
 
+		if (default_specifier) {
+			state.commands.push(c(default_specifier.local.name, default_specifier));
+			if (namespace_specifier || named_specifiers.length > 0) state.commands.push(', ');
+		}
+
 		if (namespace_specifier) {
 			state.commands.push(c('* as ' + namespace_specifier.local.name, namespace_specifier));
 		}
 
-		if (default_specifier) {
-			state.commands.push(c(default_specifier.local.name, default_specifier));
-		}
-
 		if (named_specifiers.length > 0) {
-			if (default_specifier) state.commands.push(', ');
-
 			state.commands.push('{');
 			sequence(named_specifiers, state, true, (s, state) => {
 				if (s.local.name !== s.imported.name) {
