@@ -616,7 +616,9 @@ const handlers = {
 
 		if (
 			node.body.type === 'ObjectExpression' ||
-			(node.body.type === 'AssignmentExpression' && node.body.left.type === 'ObjectPattern')
+			(node.body.type === 'AssignmentExpression' && node.body.left.type === 'ObjectPattern') ||
+			(node.body.type === 'LogicalExpression' && node.body.left.type === 'ObjectExpression') ||
+			(node.body.type === 'ConditionalExpression' && node.body.test.type === 'ObjectExpression')
 		) {
 			state.commands.push('(');
 			handle(node.body, state);
