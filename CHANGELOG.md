@@ -1,5 +1,9 @@
 # esrap changelog
 
+## 1.2.2
+
+- Correctly handle arrow functions where body includes an object expression ([#9](https://github.com/Rich-Harris/esrap/pull/9))
+
 ## 1.2.1
 
 - Support default and namespace import in same declaration ([#8](https://github.com/Rich-Harris/esrap/pull/8))
