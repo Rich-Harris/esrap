@@ -29,11 +29,15 @@
   "scripts": {
     "check": "tsc",
     "prepublishOnly": "bun test && dts-buddy",
-    "sandbox": "bun run test/sandbox/index.js"
+    "sandbox": "bun run test/sandbox/index.js",
+    "test:dev": "vitest",
+    "test:ui": "vitest --ui"
   },
   "license": "MIT",
   "dependencies": {
     "@jridgewell/sourcemap-codec": "^1.4.15",
-    "@types/estree": "^1.0.1"
+    "@types/estree": "^1.0.1",
+    "@vitest/ui": "^2.0.5",
+    "vitest": "^2.0.5"
   }
 }
