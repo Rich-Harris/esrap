@@ -147,12 +147,11 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		expect(code.trim().replace(/^\t+$/gm, '')).toMatchFileSnapshot(
 			`${__dirname}/samples/${dir}/expected.js`
 		);
-		// const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
-		// expect(code.trim().replace(/^\t+$/gm, '')).toBe(expected.trim());
 
-		// const expected_map = await Bun.file(`${__dirname}/samples/${dir}/expected.js.map`).json();
-		// expect(map).toEqual(expected_map);
+		expect(JSON.stringify(map, null, '  ').replaceAll('\\r', '')).toMatchFileSnapshot(
+			`${__dirname}/samples/${dir}/expected.js.map`
+		);
 
-		// expect(clean(/** @type {import('estree').Node} */ (parsed))).toEqual(clean(ast));
+		expect(clean(/** @type {import('estree').Node} */ (parsed))).toEqual(clean(ast));
 	});
 }
