@@ -35,6 +35,7 @@ function load(input) {
 		_(node, { next }) {
 			let comment;
 
+			// @ts-expect-error
 			while (comments[0] && comments[0].start < node.start) {
 				comment = comments.shift();
 				(node.leadingComments ??= []).push(comment);
@@ -43,6 +44,7 @@ function load(input) {
 			next();
 
 			if (comments[0]) {
+				// @ts-expect-error
 				const slice = input.slice(node.end, comments[0].start);
 
 				if (/^[,) \t]*$/.test(slice)) {
@@ -60,7 +62,9 @@ function clean(ast) {
 	const cleaned = walk(ast, null, {
 		_(node, context) {
 			delete node.loc;
+			// @ts-expect-error
 			delete node.start;
+			// @ts-expect-error
 			delete node.end;
 			delete node.leadingComments;
 			delete node.trailingComments;
