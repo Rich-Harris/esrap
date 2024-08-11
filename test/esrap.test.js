@@ -1,16 +1,20 @@
 // @ts-check
 import { expect, test } from 'vitest';
 import fs, { readFileSync, writeFileSync } from 'node:fs';
-import { parse } from 'acorn';
+import * as acorn from 'acorn';
+import { tsPlugin } from 'acorn-typescript';
 import { walk } from 'zimmerframe';
 import { print } from '../src/index.js';
+
+// @ts-expect-error
+const acornTs = acorn.Parser.extend(tsPlugin({ allowSatisfies: true }));
 
 /** @param {string} input */
 function load(input) {
 	const comments = [];
 
 	const ast = /** @type {import('estree').Node} */ (
-		parse(input, {
+		acornTs.parse(input, {
 			ecmaVersion: 'latest',
 			sourceType: 'module',
 			locations: true,
@@ -134,9 +138,10 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		writeFileSync(`${__dirname}/samples/${dir}/_actual.js`, code);
 		writeFileSync(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
 
-		const parsed = parse(code, {
+		const parsed = acornTs.parse(code, {
 			ecmaVersion: 'latest',
-			sourceType: input_json.length > 0 ? 'script' : 'module'
+			sourceType: input_json.length > 0 ? 'script' : 'module',
+			locations: true
 		});
 
 		writeFileSync(
