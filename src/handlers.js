@@ -391,6 +391,70 @@ function sequence(nodes, state, spaces, fn) {
 	}
 }
 
+/**
+ * @param {any} annotation
+ * @param {import('./types').State} state
+ */
+function addTypeAnnotations(annotation, state) {
+	switch (annotation.type) {
+		case 'TSNumberKeyword':
+			state.commands.push('number');
+			break;
+		case 'TSStringKeyword':
+			state.commands.push('string');
+			break;
+		case 'TSBooleanKeyword':
+			state.commands.push('boolean');
+			break;
+		case 'TSAnyKeyword':
+			state.commands.push('any');
+			break;
+		case 'TSArrayType':
+			addTypeAnnotations(annotation.elementType, state);
+			state.commands.push('[]');
+			break;
+		case 'TSTypeAnnotation':
+			state.commands.push(': ');
+			addTypeAnnotations(annotation.typeAnnotation, state);
+			break;
+		case 'TSTypeLiteral':
+			state.commands.push('{ ');
+			for (let i = 0; i < annotation.members.length; i++) {
+				addTypeAnnotations(annotation.members[i], state);
+				if (i !== annotation.members.length - 1) state.commands.push('; ');
+			}
+			state.commands.push(' }');
+			break;
+		case 'TSPropertySignature':
+			handle(annotation.key, state);
+			addTypeAnnotations(annotation.typeAnnotation, state);
+			break;
+		case 'TSTypeReference':
+			handle(annotation.typeName, state);
+			if (annotation.typeParameters) addTypeAnnotations(annotation.typeParameters, state);
+			break;
+		case 'TSTypeParameterInstantiation':
+		case 'TSTypeParameterDeclaration':
+			state.commands.push('<');
+			for (let i = 0; i < annotation.params.length; i++) {
+				addTypeAnnotations(annotation.params[i], state);
+				if (i != annotation.params.length - 1) state.commands.push(', ');
+			}
+			state.commands.push('>');
+			break;
+		case 'TSTypeParameter':
+			state.commands.push(annotation.name);
+			break;
+		case 'TSTypeQuery':
+			state.commands.push('typeof ');
+			handle(annotation.exprName, state);
+			break;
+
+		default:
+			break;
+	}
+}
+
 /** @satisfies {Record<string, (node: any, state: import('./types').State) => undefined>} */
 const shared = {
 	/**
@@ -586,7 +650,12 @@ const shared = {
 
 		state.commands.push('(');
 		sequence(node.params, state, false, handle);
-		state.commands.push(') ');
+		state.commands.push(')');
+
+		// @ts-expect-error
+		if (node.returnType) addTypeAnnotations(node.returnType, state);
+
+		state.commands.push(' ');
 
 		handle(node.body, state);
 	},
@@ -749,6 +818,7 @@ const handlers = {
 	ExportDefaultDeclaration(node, state) {
 		state.commands.push('export default ');
 
+		// @ts-expect-error
 		handle(node.declaration, state);
 
 		if (node.declaration.type !== 'FunctionDeclaration') {
@@ -830,6 +900,9 @@ const handlers = {
 	Identifier(node, state) {
 		let name = node.name;
 		state.commands.push(c(name, node));
+
+		// @ts-expect-error
+		if (node.typeAnnotation) addTypeAnnotations(node.typeAnnotation, state);
 	},
 
 	IfStatement(node, state) {
@@ -872,6 +945,8 @@ const handlers = {
 		}
 
 		state.commands.push('import ');
+		// @ts-expect-error
+		if (node.importKind == 'type') state.commands.push('type ');
 
 		if (default_specifier) {
 			state.commands.push(c(default_specifier.local.name, default_specifier));
@@ -890,6 +965,8 @@ const handlers = {
 					state.commands.push(' as ');
 				}
 
+				// @ts-expect-error
+				if (s.importKind == 'type') state.commands.push('type ');
 				handle(s.local, state);
 			});
 			state.commands.push('}');
@@ -1016,6 +1093,9 @@ const handlers = {
 		state.commands.push('{');
 		sequence(node.properties, state, true, handle);
 		state.commands.push('}');
+
+		// @ts-expect-error
+		if (node.typeAnnotation) addTypeAnnotations(node.typeAnnotation, state);
 	},
 
 	// @ts-expect-error this isn't a real node type, but Acorn produces it
@@ -1198,6 +1278,16 @@ const handlers = {
 			state.commands.push(' finally ');
 			handle(node.finalizer, state);
 		}
+	},
+
+	// @ts-expect-error
+	TSTypeAliasDeclaration(node, /** @type {import('./types').State} */ state) {
+		state.commands.push('type ');
+		handle(node.id, state);
+		if (node.typeParameters) addTypeAnnotations(node.typeParameters, state);
+		state.commands.push(' = ');
+		addTypeAnnotations(node.typeAnnotation, state);
+		const t = 0;
 	},
 
 	UnaryExpression(node, state) {

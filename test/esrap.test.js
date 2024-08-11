@@ -104,12 +104,14 @@ function clean(ast) {
 
 for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 	if (dir[0] === '.') continue;
+	const tsMode = dir.startsWith('ts-');
+	const fileExtension = tsMode ? 'ts' : 'js';
 
 	test(dir, async () => {
 		let input_js = '';
 		let input_json = '';
 		try {
-			input_js = readFileSync(`${__dirname}/samples/${dir}/input.js`).toString();
+			input_js = readFileSync(`${__dirname}/samples/${dir}/input.${fileExtension}`).toString();
 		} catch (error) {}
 		try {
 			input_json = readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
@@ -135,8 +137,11 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 
 		const { code, map } = print(ast, opts);
 
-		writeFileSync(`${__dirname}/samples/${dir}/_actual.js`, code);
-		writeFileSync(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
+		writeFileSync(`${__dirname}/samples/${dir}/_actual.${fileExtension}`, code);
+		writeFileSync(
+			`${__dirname}/samples/${dir}/_actual.${fileExtension}.map`,
+			JSON.stringify(map, null, '\t')
+		);
 
 		const parsed = acornTs.parse(code, {
 			ecmaVersion: 'latest',
@@ -154,11 +159,11 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		);
 
 		expect(code.trim().replace(/^\t+$/gm, '')).toMatchFileSnapshot(
-			`${__dirname}/samples/${dir}/expected.js`
+			`${__dirname}/samples/${dir}/expected.${fileExtension}`
 		);
 
 		expect(JSON.stringify(map, null, '  ').replaceAll('\\r', '')).toMatchFileSnapshot(
-			`${__dirname}/samples/${dir}/expected.js.map`
+			`${__dirname}/samples/${dir}/expected.${fileExtension}.map`
 		);
 
 		expect(clean(/** @type {import('estree').Node} */ (parsed))).toEqual(clean(ast));
