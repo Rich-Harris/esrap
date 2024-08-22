@@ -21,7 +21,6 @@
   "devDependencies": {
     "@vitest/ui": "^2.0.5",
     "acorn": "^8.10.0",
-    "bun-types": "^1.0.9",
     "dts-buddy": "^0.2.4",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2",
@@ -30,10 +29,9 @@
   },
   "scripts": {
     "check": "tsc",
-    "prepublishOnly": "bun test && dts-buddy",
-    "sandbox": "bun run test/sandbox/index.js",
-    "test:dev": "vitest",
-    "test:ui": "vitest --ui"
+    "prepublishOnly": "pnpm test && dts-buddy",
+    "sandbox": "node test/sandbox/index.js",
+    "test": "vitest --run"
   },
   "license": "MIT",
   "dependencies": {

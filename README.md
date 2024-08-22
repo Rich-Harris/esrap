@@ -50,7 +50,7 @@ Because it's ginormous.
 
 ## Developing
 
-This repo uses [Bun](https://bun.sh/). Once it's installed, do `bun install` to install dependencies, and `bun test` to run the tests.
+This repo uses [pnpm](https://pnpm.io). Once it's installed, do `pnpm install` to install dependencies, and `pnpm test` to run the tests.
 
 ## License
 
