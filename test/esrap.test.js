@@ -148,7 +148,7 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			`${__dirname}/samples/${dir}/expected.js`
 		);
 
-		expect(JSON.stringify(map, null, '  ').replaceAll('\r', '')).toMatchFileSnapshot(
+		expect(JSON.stringify(map, null, '  ').replaceAll('\\r', '')).toMatchFileSnapshot(
 			`${__dirname}/samples/${dir}/expected.js.map`
 		);
 
