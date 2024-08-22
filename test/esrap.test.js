@@ -1,6 +1,6 @@
 // @ts-check
-import { expect, test } from 'bun:test';
 import fs from 'node:fs';
+import { expect, test } from 'vitest';
 import { parse } from 'acorn';
 import { walk } from 'zimmerframe';
 import { print } from '../src/index.js';
@@ -98,8 +98,14 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 	if (dir[0] === '.') continue;
 
 	test(dir, async () => {
-		const input_js = Bun.file(`${__dirname}/samples/${dir}/input.js`);
-		const input_json = Bun.file(`${__dirname}/samples/${dir}/input.json`);
+		let input_js = '';
+		let input_json = '';
+		try {
+			input_js = fs.readFileSync(`${__dirname}/samples/${dir}/input.js`).toString();
+		} catch (error) {}
+		try {
+			input_json = fs.readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
+		} catch (error) {}
 
 		/** @type {import('estree').Program} */
 		let ast;
@@ -107,11 +113,11 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		/** @type {import('../src/index.js').PrintOptions} */
 		let opts;
 
-		if (input_json.size > 0) {
-			ast = await input_json.json();
+		if (input_json.length > 0) {
+			ast = JSON.parse(input_json);
 			opts = {};
 		} else {
-			const content = await input_js.text();
+			const content = input_js;
 			ast = load(content);
 			opts = {
 				sourceMapSource: 'input.js',
@@ -121,15 +127,15 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 
 		const { code, map } = print(ast, opts);
 
-		Bun.write(`${__dirname}/samples/${dir}/_actual.js`, code);
-		Bun.write(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
+		fs.writeFileSync(`${__dirname}/samples/${dir}/_actual.js`, code);
+		fs.writeFileSync(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
 
 		const parsed = parse(code, {
 			ecmaVersion: 'latest',
-			sourceType: input_json.size > 0 ? 'script' : 'module'
+			sourceType: input_json.length > 0 ? 'script' : 'module'
 		});
 
-		Bun.write(
+		fs.writeFileSync(
 			`${__dirname}/samples/${dir}/_actual.json`,
 			JSON.stringify(
 				parsed,
@@ -138,11 +144,13 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			)
 		);
 
-		const expected = await Bun.file(`${__dirname}/samples/${dir}/expected.js`).text();
-		expect(code.trim().replace(/^\t+$/gm, '')).toBe(expected.trim());
+		expect(code.trim().replace(/^\t+$/gm, '').replaceAll('\r', '')).toMatchFileSnapshot(
+			`${__dirname}/samples/${dir}/expected.js`
+		);
 
-		const expected_map = await Bun.file(`${__dirname}/samples/${dir}/expected.js.map`).json();
-		expect(map).toEqual(expected_map);
+		expect(JSON.stringify(map, null, '  ').replaceAll('\\r', '')).toMatchFileSnapshot(
+			`${__dirname}/samples/${dir}/expected.js.map`
+		);
 
 		expect(clean(/** @type {import('estree').Node} */ (parsed))).toEqual(clean(ast));
 	});

@@ -1,11 +1,11 @@
 {
-	"version": 3,
-	"names": [],
-	"sources": [
-		"input.js"
-	],
-	"sourcesContent": [
-		"if (false) {\n\n}\n\nfunction x() {\n\n}\n"
-	],
-	"mappings": "IAAI,KAAK;SAIA,CAAC"
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "if (false) {\n\n}\n\nfunction x() {\n\n}\n"
+  ],
+  "mappings": "IAAI,KAAK;SAIA,CAAC"
 }
