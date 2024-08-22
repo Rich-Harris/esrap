@@ -37,5 +37,6 @@
   "dependencies": {
     "@jridgewell/sourcemap-codec": "^1.4.15",
     "@types/estree": "^1.0.1"
-  }
+  },
+  "packageManager": "pnpm@9.8.0"
 }
