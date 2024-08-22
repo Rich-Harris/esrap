@@ -1,6 +1,6 @@
 // @ts-check
+import fs from 'node:fs';
 import { expect, test } from 'vitest';
-import fs, { readFileSync, writeFileSync } from 'node:fs';
 import { parse } from 'acorn';
 import { walk } from 'zimmerframe';
 import { print } from '../src/index.js';
@@ -101,10 +101,10 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		let input_js = '';
 		let input_json = '';
 		try {
-			input_js = readFileSync(`${__dirname}/samples/${dir}/input.js`).toString();
+			input_js = fs.readFileSync(`${__dirname}/samples/${dir}/input.js`).toString();
 		} catch (error) {}
 		try {
-			input_json = readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
+			input_json = fs.readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
 		} catch (error) {}
 
 		/** @type {import('estree').Program} */
@@ -127,15 +127,15 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 
 		const { code, map } = print(ast, opts);
 
-		writeFileSync(`${__dirname}/samples/${dir}/_actual.js`, code);
-		writeFileSync(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
+		fs.writeFileSync(`${__dirname}/samples/${dir}/_actual.js`, code);
+		fs.writeFileSync(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
 
 		const parsed = parse(code, {
 			ecmaVersion: 'latest',
 			sourceType: input_json.length > 0 ? 'script' : 'module'
 		});
 
-		writeFileSync(
+		fs.writeFileSync(
 			`${__dirname}/samples/${dir}/_actual.json`,
 			JSON.stringify(
 				parsed,
