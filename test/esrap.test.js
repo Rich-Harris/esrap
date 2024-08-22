@@ -1,6 +1,6 @@
 // @ts-check
+import fs from 'node:fs';
 import { expect, test } from 'vitest';
-import fs, { readFileSync, writeFileSync } from 'node:fs';
 import * as acorn from 'acorn';
 import { tsPlugin } from 'acorn-typescript';
 import { walk } from 'zimmerframe';
@@ -111,10 +111,10 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		let input_js = '';
 		let input_json = '';
 		try {
-			input_js = readFileSync(`${__dirname}/samples/${dir}/input.${fileExtension}`).toString();
+			input_js = fs.readFileSync(`${__dirname}/samples/${dir}/input.${fileExtension}`, 'utf-8');
 		} catch (error) {}
 		try {
-			input_json = readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
+			input_json = fs.readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
 		} catch (error) {}
 
 		/** @type {import('estree').Program} */
@@ -137,8 +137,8 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 
 		const { code, map } = print(ast, opts);
 
-		writeFileSync(`${__dirname}/samples/${dir}/_actual.${fileExtension}`, code);
-		writeFileSync(
+		fs.writeFileSync(`${__dirname}/samples/${dir}/_actual.${fileExtension}`, code);
+		fs.writeFileSync(
 			`${__dirname}/samples/${dir}/_actual.${fileExtension}.map`,
 			JSON.stringify(map, null, '\t')
 		);
@@ -149,7 +149,7 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			locations: true
 		});
 
-		writeFileSync(
+		fs.writeFileSync(
 			`${__dirname}/samples/${dir}/_actual.json`,
 			JSON.stringify(
 				parsed,
@@ -158,7 +158,7 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			)
 		);
 
-		expect(code.trim().replace(/^\t+$/gm, '')).toMatchFileSnapshot(
+		expect(code.trim().replace(/^\t+$/gm, '').replaceAll('\r', '')).toMatchFileSnapshot(
 			`${__dirname}/samples/${dir}/expected.${fileExtension}`
 		);
 
