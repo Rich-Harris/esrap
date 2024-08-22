@@ -144,11 +144,11 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			)
 		);
 
-		expect(code.trim().replace(/^\t+$/gm, '').replaceAll('\\r', '')).toMatchFileSnapshot(
+		expect(code.trim().replace(/^\t+$/gm, '').replaceAll('\r', '')).toMatchFileSnapshot(
 			`${__dirname}/samples/${dir}/expected.js`
 		);
 
-		expect(JSON.stringify(map, null, '  ').replaceAll('\\r', '')).toMatchFileSnapshot(
+		expect(JSON.stringify(map, null, '  ').replaceAll('\r', '')).toMatchFileSnapshot(
 			`${__dirname}/samples/${dir}/expected.js.map`
 		);
 
