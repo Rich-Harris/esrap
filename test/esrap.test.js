@@ -144,7 +144,7 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			)
 		);
 
-		expect(code.trim().replace(/^\t+$/gm, '')).toMatchFileSnapshot(
+		expect(code.trim().replace(/^\t+$/gm, '').replaceAll('\\r', '')).toMatchFileSnapshot(
 			`${__dirname}/samples/${dir}/expected.js`
 		);
 
