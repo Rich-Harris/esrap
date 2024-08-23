@@ -13,7 +13,7 @@ const acornTs = acorn.Parser.extend(tsPlugin({ allowSatisfies: true }));
 function load(input) {
 	const comments = [];
 
-	const ast = /** @type {import('estree').Node} */ (
+	const ast = /** @type {import('@typescript-eslint/types').TSESTree.Node} */ (
 		acornTs.parse(input, {
 			ecmaVersion: 'latest',
 			sourceType: 'module',
@@ -58,10 +58,10 @@ function load(input) {
 		}
 	});
 
-	return /** @type {import('estree').Program} */ (ast);
+	return /** @type {import('@typescript-eslint/types').TSESTree.Program} */ (ast);
 }
 
-/** @param {import('estree').Node} ast */
+/** @param {import('@typescript-eslint/types').TSESTree.Node} ast */
 function clean(ast) {
 	const cleaned = walk(ast, null, {
 		_(node, context) {
@@ -117,7 +117,7 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			input_json = fs.readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
 		} catch (error) {}
 
-		/** @type {import('estree').Program} */
+		/** @type {import('@typescript-eslint/types').TSESTree.Program} */
 		let ast;
 
 		/** @type {import('../src/index.js').PrintOptions} */
@@ -166,6 +166,8 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			`${__dirname}/samples/${dir}/expected.${fileExtension}.map`
 		);
 
-		expect(clean(/** @type {import('estree').Node} */ (parsed))).toEqual(clean(ast));
+		expect(clean(/** @type {import('@typescript-eslint/types').TSESTree.Node} */ (parsed))).toEqual(
+			clean(ast)
+		);
 	});
 }

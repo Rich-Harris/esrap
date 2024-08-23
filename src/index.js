@@ -23,7 +23,7 @@ if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
  */
 
 /**
- * @param {import('estree').Node} node
+ * @param {import('@typescript-eslint/types').TSESTree.Node} node
  * @param {PrintOptions} opts
  * @returns {{ code: string, map: any }} // TODO
  */

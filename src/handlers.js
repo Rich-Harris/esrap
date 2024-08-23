@@ -39,7 +39,7 @@ function measure(commands, from, to = commands.length) {
 }
 
 /**
- * @param {import('estree').Node} node
+ * @param {import('@typescript-eslint/types').TSESTree.Node} node
  * @param {import('./types').State} state
  */
 export function handle(node, state) {
@@ -63,7 +63,7 @@ export function handle(node, state) {
 
 /**
  * @param {string} content
- * @param {import('estree').Node} node
+ * @param {import('@typescript-eslint/types').TSESTree.Node} node
  * @returns {import('./types').Chunk}
  */
 function c(content, node) {
@@ -75,7 +75,7 @@ function c(content, node) {
 }
 
 /**
- * @param {import('estree').Comment[]} comments
+ * @param {import('@typescript-eslint/types').TSESTree.Comment[]} comments
  * @param {import('./types').State} state
  * @param {boolean} newlines
  */
@@ -119,8 +119,19 @@ const OPERATOR_PRECEDENCE = {
 	'**': 13
 };
 
-/** @type {Record<import('estree').Expression['type'] | 'Super' | 'RestElement', number>} */
+/** @type {Record<import('@typescript-eslint/types').TSESTree.Expression['type'] | 'Super' | 'RestElement', number>} */
 const EXPRESSIONS_PRECEDENCE = {
+	// TODO: add proper precedence
+	ArrayPattern: 1,
+	JSXElement: 1,
+	JSXFragment: 1,
+	ObjectPattern: 1,
+	TSAsExpression: 1,
+	TSInstantiationExpression: 1,
+	TSNonNullExpression: 1,
+	TSSatisfiesExpression: 1,
+	TSTypeAssertion: 1,
+
 	ArrayExpression: 20,
 	TaggedTemplateExpression: 20,
 	ThisExpression: 20,
@@ -152,12 +163,14 @@ const EXPRESSIONS_PRECEDENCE = {
 
 /**
  *
- * @param {import('estree').Expression} node
- * @param {import('estree').BinaryExpression | import('estree').LogicalExpression} parent
+ * @param {import('@typescript-eslint/types').TSESTree.Expression | import('@typescript-eslint/types').TSESTree.PrivateIdentifier} node
+ * @param {import('@typescript-eslint/types').TSESTree.BinaryExpression | import('@typescript-eslint/types').TSESTree.LogicalExpression} parent
  * @param {boolean} is_right
  * @returns
  */
 function needs_parens(node, parent, is_right) {
+	if (node.type === 'PrivateIdentifier') return false;
+
 	// special case where logical expressions and coalesce expressions cannot be mixed,
 	// either of them need to be wrapped with parentheses
 	if (
@@ -186,7 +199,8 @@ function needs_parens(node, parent, is_right) {
 	}
 
 	if (
-		/** @type {import('estree').BinaryExpression} */ (node).operator === '**' &&
+		/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator ===
+			'**' &&
 		parent.operator === '**'
 	) {
 		// Exponentiation operator has right-to-left associativity
@@ -196,18 +210,20 @@ function needs_parens(node, parent, is_right) {
 	if (is_right) {
 		// Parenthesis are used if both operators have the same precedence
 		return (
-			OPERATOR_PRECEDENCE[/** @type {import('estree').BinaryExpression} */ (node).operator] <=
-			OPERATOR_PRECEDENCE[parent.operator]
+			OPERATOR_PRECEDENCE[
+				/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator
+			] <= OPERATOR_PRECEDENCE[parent.operator]
 		);
 	}
 
 	return (
-		OPERATOR_PRECEDENCE[/** @type {import('estree').BinaryExpression} */ (node).operator] <
-		OPERATOR_PRECEDENCE[parent.operator]
+		OPERATOR_PRECEDENCE[
+			/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator
+		] < OPERATOR_PRECEDENCE[parent.operator]
 	);
 }
 
-/** @param {import('estree').Node} node */
+/** @param {import('@typescript-eslint/types').TSESTree.Node} node */
 function has_call_expression(node) {
 	while (node) {
 		if (node.type === 'CallExpression') {
@@ -228,11 +244,13 @@ const grouped_expression_types = [
 ];
 
 /**
- * @param {import('estree').Node[]} nodes
+ * @param {import('@typescript-eslint/types').TSESTree.Node[]} nodes
  * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
-	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
+	let last_statement = /** @type {import('@typescript-eslint/types').TSESTree.Node} */ ({
+		type: 'EmptyStatement'
+	});
 	let first = true;
 	let needs_margin = false;
 
@@ -267,7 +285,9 @@ const handle_body = (nodes, state) => {
 		let add_newline = false;
 
 		while (state.comments.length) {
-			const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+			const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
+				state.comments.shift()
+			);
 
 			state.commands.push(add_newline ? newline : ' ', { type: 'Comment', comment });
 			add_newline = comment.type === 'Line';
@@ -279,7 +299,7 @@ const handle_body = (nodes, state) => {
 };
 
 /**
- * @param {import('estree').VariableDeclaration} node
+ * @param {import('@typescript-eslint/types').TSESTree.VariableDeclaration} node
  * @param {import('./types').State} state
  */
 const handle_var_declaration = (node, state) => {
@@ -314,7 +334,7 @@ const handle_var_declaration = (node, state) => {
 };
 
 /**
- * @template {import('estree').Node} T
+ * @template {import('@typescript-eslint/types').TSESTree.Node} T
  * @param {Array<T | null>} nodes
  * @param {import('./types').State} state
  * @param {boolean} spaces
@@ -355,7 +375,9 @@ function sequence(nodes, state, spaces, fn) {
 				state.commands.push(' ');
 
 				while (state.comments.length) {
-					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+					const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
+						state.comments.shift()
+					);
 					state.commands.push({ type: 'Comment', comment });
 					if (!is_last) state.commands.push(join);
 				}
@@ -458,17 +480,22 @@ function addTypeAnnotations(annotation, state) {
 /** @satisfies {Record<string, (node: any, state: import('./types').State) => undefined>} */
 const shared = {
 	/**
-	 * @param {import('estree').ArrayExpression | import('estree').ArrayPattern} node
+	 * @param {import('@typescript-eslint/types').TSESTree.ArrayExpression | import('@typescript-eslint/types').TSESTree.ArrayPattern} node
 	 * @param {import('./types').State} state
 	 */
 	'ArrayExpression|ArrayPattern': (node, state) => {
 		state.commands.push('[');
-		sequence(/** @type {import('estree').Node[]} */ (node.elements), state, false, handle);
+		sequence(
+			/** @type {import('@typescript-eslint/types').TSESTree.Node[]} */ (node.elements),
+			state,
+			false,
+			handle
+		);
 		state.commands.push(']');
 	},
 
 	/**
-	 * @param {import('estree').BinaryExpression | import('estree').LogicalExpression} node
+	 * @param {import('@typescript-eslint/types').TSESTree.BinaryExpression | import('@typescript-eslint/types').TSESTree.LogicalExpression} node
 	 * @param {import('./types').State} state
 	 */
 	'BinaryExpression|LogicalExpression': (node, state) => {
@@ -499,7 +526,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').BlockStatement | import('estree').ClassBody} node
+	 * @param {import('@typescript-eslint/types').TSESTree.BlockStatement | import('@typescript-eslint/types').TSESTree.ClassBody} node
 	 * @param {import('./types').State} state
 	 */
 	'BlockStatement|ClassBody': (node, state) => {
@@ -516,7 +543,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').CallExpression | import('estree').NewExpression} node
+	 * @param {import('@typescript-eslint/types').TSESTree.CallExpression | import('@typescript-eslint/types').TSESTree.NewExpression} node
 	 * @param {import('./types').State} state
 	 */
 	'CallExpression|NewExpression': (node, state) => {
@@ -538,7 +565,7 @@ const shared = {
 			handle(node.callee, state);
 		}
 
-		if (/** @type {import('estree').SimpleCallExpression} */ (node).optional) {
+		if (/** @type {import('@typescript-eslint/types').TSESTree.CallExpression} */ (node).optional) {
 			state.commands.push('?.');
 		}
 
@@ -559,7 +586,9 @@ const shared = {
 					state.commands.push(', ');
 
 					while (state.comments.length) {
-						const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+						const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
+							state.comments.shift()
+						);
 
 						state.commands.push({ type: 'Comment', comment });
 
@@ -598,7 +627,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').ClassDeclaration | import('estree').ClassExpression} node
+	 * @param {import('@typescript-eslint/types').TSESTree.ClassDeclaration | import('@typescript-eslint/types').TSESTree.ClassExpression} node
 	 * @param {import('./types').State} state
 	 */
 	'ClassDeclaration|ClassExpression': (node, state) => {
@@ -619,7 +648,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').ForInStatement | import('estree').ForOfStatement} node
+	 * @param {import('@typescript-eslint/types').TSESTree.ForInStatement | import('@typescript-eslint/types').TSESTree.ForOfStatement} node
 	 * @param {import('./types').State} state
 	 */
 	'ForInStatement|ForOfStatement': (node, state) => {
@@ -640,7 +669,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').FunctionDeclaration | import('estree').FunctionExpression} node
+	 * @param {import('@typescript-eslint/types').TSESTree.FunctionDeclaration | import('@typescript-eslint/types').TSESTree.FunctionExpression} node
 	 * @param {import('./types').State} state
 	 */
 	'FunctionDeclaration|FunctionExpression': (node, state) => {
@@ -652,7 +681,6 @@ const shared = {
 		sequence(node.params, state, false, handle);
 		state.commands.push(')');
 
-		// @ts-expect-error
 		if (node.returnType) addTypeAnnotations(node.returnType, state);
 
 		state.commands.push(' ');
@@ -661,7 +689,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').RestElement | import('estree').SpreadElement} node
+	 * @param {import('@typescript-eslint/types').TSESTree.RestElement | import('@typescript-eslint/types').TSESTree.SpreadElement} node
 	 * @param {import('./types').State} state
 	 */
 	'RestElement|SpreadElement': (node, state) => {
@@ -818,7 +846,6 @@ const handlers = {
 	ExportDefaultDeclaration(node, state) {
 		state.commands.push('export default ');
 
-		// @ts-expect-error
 		handle(node.declaration, state);
 
 		if (node.declaration.type !== 'FunctionDeclaration') {
@@ -901,7 +928,6 @@ const handlers = {
 		let name = node.name;
 		state.commands.push(c(name, node));
 
-		// @ts-expect-error
 		if (node.typeAnnotation) addTypeAnnotations(node.typeAnnotation, state);
 	},
 
@@ -925,13 +951,13 @@ const handlers = {
 			return;
 		}
 
-		/** @type {import('estree').ImportNamespaceSpecifier | null} */
+		/** @type {import('@typescript-eslint/types').TSESTree.ImportNamespaceSpecifier | null} */
 		let namespace_specifier = null;
 
-		/** @type {import('estree').ImportDefaultSpecifier | null} */
+		/** @type {import('@typescript-eslint/types').TSESTree.ImportDefaultSpecifier | null} */
 		let default_specifier = null;
 
-		/** @type {import('estree').ImportSpecifier[]} */
+		/** @type {import('@typescript-eslint/types').TSESTree.ImportSpecifier[]} */
 		const named_specifiers = [];
 
 		for (const s of node.specifiers) {
@@ -945,7 +971,6 @@ const handlers = {
 		}
 
 		state.commands.push('import ');
-		// @ts-expect-error
 		if (node.importKind == 'type') state.commands.push('type ');
 
 		if (default_specifier) {
@@ -965,7 +990,6 @@ const handlers = {
 					state.commands.push(' as ');
 				}
 
-				// @ts-expect-error
 				if (s.importKind == 'type') state.commands.push('type ');
 				handle(s.local, state);
 			});
@@ -992,9 +1016,10 @@ const handlers = {
 	Literal(node, state) {
 		// TODO do we need to handle weird unicode characters somehow?
 		// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
-		const value =
-			node.raw ??
-			(typeof node.value === 'string' ? JSON.stringify(node.value) : String(node.value));
+
+		let value = node.raw;
+		if (!value)
+			value = typeof node.value === 'string' ? JSON.stringify(node.value) : String(node.value);
 
 		state.commands.push(c(value, node));
 	},
@@ -1055,7 +1080,7 @@ const handlers = {
 		sequence(node.value.params, state, false, handle);
 		state.commands.push(') ');
 
-		handle(node.value.body, state);
+		if (node.value.body) handle(node.value.body, state);
 	},
 
 	NewExpression: shared['CallExpression|NewExpression'],
@@ -1064,7 +1089,9 @@ const handlers = {
 		state.commands.push('{');
 		sequence(node.properties, state, true, (p, state) => {
 			if (p.type === 'Property' && p.value.type === 'FunctionExpression') {
-				const fn = /** @type {import('estree').FunctionExpression} */ (p.value);
+				const fn = /** @type {import('@typescript-eslint/types').TSESTree.FunctionExpression} */ (
+					p.value
+				);
 
 				if (p.kind === 'get' || p.kind === 'set') {
 					state.commands.push(p.kind + ' ');
@@ -1094,7 +1121,6 @@ const handlers = {
 		sequence(node.properties, state, true, handle);
 		state.commands.push('}');
 
-		// @ts-expect-error
 		if (node.typeAnnotation) addTypeAnnotations(node.typeAnnotation, state);
 	},
 
@@ -1254,7 +1280,7 @@ const handlers = {
 
 	ThrowStatement(node, state) {
 		state.commands.push('throw ');
-		handle(node.argument, state);
+		if (node.argument) handle(node.argument, state);
 		state.commands.push(';');
 	},
 
@@ -1280,7 +1306,6 @@ const handlers = {
 		}
 	},
 
-	// @ts-expect-error
 	TSTypeAliasDeclaration(node, /** @type {import('./types').State} */ state) {
 		state.commands.push('type ');
 		handle(node.id, state);

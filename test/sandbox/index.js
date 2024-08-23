@@ -7,7 +7,7 @@ import { print } from '../../src/index.js';
 function load(input) {
 	const comments = [];
 
-	const ast = /** @type {import('estree').Node} */ (
+	const ast = /** @type {import('@typescript-eslint/types').TSESTree.Node} */ (
 		parse(input, {
 			ecmaVersion: 'latest',
 			sourceType: 'module',
@@ -50,7 +50,7 @@ function load(input) {
 		}
 	});
 
-	return /** @type {import('estree').Program} */ (ast);
+	return /** @type {import('@typescript-eslint/types').TSESTree.Program} */ (ast);
 }
 
 const input_js = Bun.file(`${import.meta.dir}/_input.js`);

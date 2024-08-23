@@ -1,16 +1,16 @@
-import { Comment, Node } from 'estree';
+import { AST_NODE_TYPES, TSESTree } from '@typescript-eslint/types';
 
 type NodeOf<T extends string, X> = X extends { type: T } ? X : never;
 
 type Handler<T> = (node: T, state: State) => undefined;
 
 export type Handlers = {
-	[K in Node['type']]: Handler<NodeOf<K, Node>>;
+	[K in AST_NODE_TYPES]: Handler<NodeOf<K, TSESTree.Node>>;
 };
 
 export interface State {
 	commands: Command[];
-	comments: Comment[];
+	comments: TSESTree.Comment[];
 	multiline: boolean;
 }
 
@@ -47,7 +47,7 @@ export interface Sequence {
 
 export interface CommentChunk {
 	type: 'Comment';
-	comment: Comment;
+	comment: TSESTree.Comment;
 }
 
 export type Command = string | Chunk | Newline | Indent | Dedent | Sequence | CommentChunk;
