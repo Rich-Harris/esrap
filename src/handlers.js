@@ -43,21 +43,23 @@ function measure(commands, from, to = commands.length) {
  * @param {import('./types').State} state
  */
 export function handle(node, state) {
+	const nodeWithComments = /** @type {import('./types').NodeWithComments} */ (node);
+
 	const handler = handlers[node.type];
 
 	if (!handler) {
 		throw new Error(`Not implemented ${node.type}`);
 	}
 
-	if (node.leadingComments) {
-		prepend_comments(node.leadingComments, state, false);
+	if (nodeWithComments.leadingComments) {
+		prepend_comments(nodeWithComments.leadingComments, state, false);
 	}
 
 	// @ts-expect-error
 	handler(node, state);
 
-	if (node.trailingComments) {
-		state.comments.push(node.trailingComments[0]); // there is only ever one
+	if (nodeWithComments.trailingComments) {
+		state.comments.push(nodeWithComments.trailingComments[0]); // there is only ever one
 	}
 }
 
@@ -262,8 +264,9 @@ const handle_body = (nodes, state) => {
 		if (!first) state.commands.push(margin, newline);
 		first = false;
 
-		const leadingComments = statement.leadingComments;
-		delete statement.leadingComments;
+		const statementWithComments = /** @type {import('./types').NodeWithComments} */ (statement);
+		const leadingComments = statementWithComments.leadingComments;
+		delete statementWithComments.leadingComments;
 
 		if (leadingComments && leadingComments.length > 0) {
 			prepend_comments(leadingComments, state, true);
@@ -1184,9 +1187,10 @@ const handlers = {
 
 	ReturnStatement(node, state) {
 		if (node.argument) {
+			const argumentWithComment = /** @type {import('./types').NodeWithComments} */ (node.argument);
 			const contains_comment =
-				node.argument.leadingComments &&
-				node.argument.leadingComments.some((comment) => comment.type === 'Line');
+				argumentWithComment.leadingComments &&
+				argumentWithComment.leadingComments.some((comment) => comment.type === 'Line');
 
 			state.commands.push(contains_comment ? 'return (' : 'return ');
 			handle(node.argument, state);

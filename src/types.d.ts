@@ -8,6 +8,13 @@ export type Handlers = {
 	[K in AST_NODE_TYPES]: Handler<NodeOf<K, TSESTree.Node>>;
 };
 
+// `@typescript-eslint/types` differs from the official `estree` spec by handling
+// comments differently. This is a node which we can use to ensure type saftey.
+export type NodeWithComments = {
+	leadingComments?: TSESTree.Comment[] | undefined;
+	trailingComments?: TSESTree.Comment[] | undefined;
+} & TSESTree.Node;
+
 export interface State {
 	commands: Command[];
 	comments: TSESTree.Comment[];

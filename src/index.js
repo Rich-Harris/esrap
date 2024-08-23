@@ -31,6 +31,7 @@ export function print(node, opts = {}) {
 	if (Array.isArray(node)) {
 		return print(
 			{
+				//@ts-expect-error
 				type: 'Program',
 				body: node,
 				sourceType: 'module'
