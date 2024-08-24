@@ -417,11 +417,11 @@ function sequence(nodes, state, spaces, fn) {
 }
 
 /**
- * @param {any} annotation
+ * @param {import('./types').TypeAnnotationNodes} typeNode
  * @param {import('./types').State} state
  */
-function addTypeAnnotations(annotation, state) {
-	switch (annotation.type) {
+function addTypeAnnotations(typeNode, state) {
+	switch (typeNode.type) {
 		case 'TSNumberKeyword':
 			state.commands.push('number');
 			break;
@@ -435,44 +435,47 @@ function addTypeAnnotations(annotation, state) {
 			state.commands.push('any');
 			break;
 		case 'TSArrayType':
-			addTypeAnnotations(annotation.elementType, state);
+			addTypeAnnotations(typeNode.elementType, state);
 			state.commands.push('[]');
 			break;
 		case 'TSTypeAnnotation':
 			state.commands.push(': ');
-			addTypeAnnotations(annotation.typeAnnotation, state);
+			addTypeAnnotations(typeNode.typeAnnotation, state);
 			break;
 		case 'TSTypeLiteral':
 			state.commands.push('{ ');
-			for (let i = 0; i < annotation.members.length; i++) {
-				addTypeAnnotations(annotation.members[i], state);
-				if (i !== annotation.members.length - 1) state.commands.push('; ');
+			for (let i = 0; i < typeNode.members.length; i++) {
+				addTypeAnnotations(typeNode.members[i], state);
+				if (i !== typeNode.members.length - 1) state.commands.push('; ');
 			}
 			state.commands.push(' }');
 			break;
 		case 'TSPropertySignature':
-			handle(annotation.key, state);
-			addTypeAnnotations(annotation.typeAnnotation, state);
+			handle(typeNode.key, state);
+			if (typeNode.typeAnnotation) addTypeAnnotations(typeNode.typeAnnotation, state);
 			break;
 		case 'TSTypeReference':
-			handle(annotation.typeName, state);
-			if (annotation.typeParameters) addTypeAnnotations(annotation.typeParameters, state);
+			handle(typeNode.typeName, state);
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			if (typeNode.typeParameters) addTypeAnnotations(typeNode.typeParameters, state);
 			break;
 		case 'TSTypeParameterInstantiation':
 		case 'TSTypeParameterDeclaration':
 			state.commands.push('<');
-			for (let i = 0; i < annotation.params.length; i++) {
-				addTypeAnnotations(annotation.params[i], state);
-				if (i != annotation.params.length - 1) state.commands.push(', ');
+			for (let i = 0; i < typeNode.params.length; i++) {
+				addTypeAnnotations(typeNode.params[i], state);
+				if (i != typeNode.params.length - 1) state.commands.push(', ');
 			}
 			state.commands.push('>');
 			break;
 		case 'TSTypeParameter':
-			state.commands.push(annotation.name);
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			state.commands.push(typeNode.name);
 			break;
 		case 'TSTypeQuery':
 			state.commands.push('typeof ');
-			handle(annotation.exprName, state);
+			handle(typeNode.exprName, state);
 			break;
 
 		default:
@@ -698,6 +701,9 @@ const shared = {
 	'RestElement|SpreadElement': (node, state) => {
 		state.commands.push('...');
 		handle(node.argument, state);
+
+		// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+		if (node.typeAnnotation) addTypeAnnotations(node.typeAnnotation, state);
 	}
 };
 

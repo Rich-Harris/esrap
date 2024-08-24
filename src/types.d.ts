@@ -6,6 +6,15 @@ export type Handlers = {
 	[T in TSESTree.Node['type']]: Handler<Extract<TSESTree.Node, { type: T }>>;
 };
 
+export type TypeAnnotationNodes =
+	| TSESTree.TypeNode
+	| TSESTree.TypeElement
+	| TSESTree.TSTypeAnnotation
+	| TSESTree.TSPropertySignature
+	| TSESTree.TSTypeParameter
+	| TSESTree.TSTypeParameterDeclaration
+	| TSESTree.TSTypeParameterInstantiation;
+
 // `@typescript-eslint/types` differs from the official `estree` spec by handling
 // comments differently. This is a node which we can use to ensure type saftey.
 export type NodeWithComments = {
