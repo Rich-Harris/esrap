@@ -834,6 +834,12 @@ const handlers = {
 		state.commands.push(c('debugger', node), ';');
 	},
 
+	Decorator(node, state) {
+		state.commands.push('@');
+		handle(node.expression, state);
+		state.commands.push(newline);
+	},
+
 	DoWhileStatement(node, state) {
 		state.commands.push('do ');
 		handle(node.body, state);
@@ -1064,6 +1070,12 @@ const handlers = {
 	},
 
 	MethodDefinition(node, state) {
+		if (node.decorators) {
+			for (const decorator of node.decorators) {
+				handle(decorator, state);
+			}
+		}
+
 		if (node.static) {
 			state.commands.push('static ');
 		}
@@ -1178,6 +1190,11 @@ const handlers = {
 			state.commands.push(']');
 		} else {
 			handle(node.key, state);
+		}
+
+		if (node.typeAnnotation) {
+			state.commands.push(': ');
+			addTypeAnnotations(node.typeAnnotation.typeAnnotation, state);
 		}
 
 		if (node.value) {

@@ -31,7 +31,8 @@
     "check": "tsc",
     "prepublishOnly": "pnpm test && dts-buddy",
     "sandbox": "node test/sandbox/index.js",
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "test:ui": "vitest --ui"
   },
   "license": "MIT",
   "dependencies": {
