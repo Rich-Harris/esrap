@@ -1,11 +1,9 @@
-import { AST_NODE_TYPES, TSESTree } from '@typescript-eslint/types';
-
-type NodeOf<T extends string, X> = X extends { type: T } ? X : never;
+import { TSESTree } from '@typescript-eslint/types';
 
 type Handler<T> = (node: T, state: State) => undefined;
 
 export type Handlers = {
-	[K in AST_NODE_TYPES]: Handler<NodeOf<K, TSESTree.Node>>;
+	[T in TSESTree.Node['type']]: Handler<Extract<TSESTree.Node, { type: T }>>;
 };
 
 // `@typescript-eslint/types` differs from the official `estree` spec by handling
