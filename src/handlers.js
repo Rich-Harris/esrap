@@ -420,7 +420,7 @@ function sequence(nodes, state, spaces, fn) {
  * @param {import('./types').TypeAnnotationNodes} typeNode
  * @param {import('./types').State} state
  */
-function addTypeAnnotations(typeNode, state) {
+function handleTypeAnnotation(typeNode, state) {
 	switch (typeNode.type) {
 		case 'TSNumberKeyword':
 			state.commands.push('number');
@@ -435,36 +435,36 @@ function addTypeAnnotations(typeNode, state) {
 			state.commands.push('any');
 			break;
 		case 'TSArrayType':
-			addTypeAnnotations(typeNode.elementType, state);
+			handleTypeAnnotation(typeNode.elementType, state);
 			state.commands.push('[]');
 			break;
 		case 'TSTypeAnnotation':
 			state.commands.push(': ');
-			addTypeAnnotations(typeNode.typeAnnotation, state);
+			handleTypeAnnotation(typeNode.typeAnnotation, state);
 			break;
 		case 'TSTypeLiteral':
 			state.commands.push('{ ');
 			for (let i = 0; i < typeNode.members.length; i++) {
-				addTypeAnnotations(typeNode.members[i], state);
+				handleTypeAnnotation(typeNode.members[i], state);
 				if (i !== typeNode.members.length - 1) state.commands.push('; ');
 			}
 			state.commands.push(' }');
 			break;
 		case 'TSPropertySignature':
 			handle(typeNode.key, state);
-			if (typeNode.typeAnnotation) addTypeAnnotations(typeNode.typeAnnotation, state);
+			if (typeNode.typeAnnotation) handleTypeAnnotation(typeNode.typeAnnotation, state);
 			break;
 		case 'TSTypeReference':
 			handle(typeNode.typeName, state);
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-			if (typeNode.typeParameters) addTypeAnnotations(typeNode.typeParameters, state);
+			if (typeNode.typeParameters) handleTypeAnnotation(typeNode.typeParameters, state);
 			break;
 		case 'TSTypeParameterInstantiation':
 		case 'TSTypeParameterDeclaration':
 			state.commands.push('<');
 			for (let i = 0; i < typeNode.params.length; i++) {
-				addTypeAnnotations(typeNode.params[i], state);
+				handleTypeAnnotation(typeNode.params[i], state);
 				if (i != typeNode.params.length - 1) state.commands.push(', ');
 			}
 			state.commands.push('>');
@@ -687,7 +687,7 @@ const shared = {
 		sequence(node.params, state, false, handle);
 		state.commands.push(')');
 
-		if (node.returnType) addTypeAnnotations(node.returnType, state);
+		if (node.returnType) handleTypeAnnotation(node.returnType, state);
 
 		state.commands.push(' ');
 
@@ -703,7 +703,7 @@ const shared = {
 		handle(node.argument, state);
 
 		// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-		if (node.typeAnnotation) addTypeAnnotations(node.typeAnnotation, state);
+		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
 	}
 };
 
@@ -943,7 +943,7 @@ const handlers = {
 		let name = node.name;
 		state.commands.push(c(name, node));
 
-		if (node.typeAnnotation) addTypeAnnotations(node.typeAnnotation, state);
+		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
 	},
 
 	IfStatement(node, state) {
@@ -1142,7 +1142,7 @@ const handlers = {
 		sequence(node.properties, state, true, handle);
 		state.commands.push('}');
 
-		if (node.typeAnnotation) addTypeAnnotations(node.typeAnnotation, state);
+		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
 	},
 
 	// @ts-expect-error this isn't a real node type, but Acorn produces it
@@ -1194,7 +1194,7 @@ const handlers = {
 
 		if (node.typeAnnotation) {
 			state.commands.push(': ');
-			addTypeAnnotations(node.typeAnnotation.typeAnnotation, state);
+			handleTypeAnnotation(node.typeAnnotation.typeAnnotation, state);
 		}
 
 		if (node.value) {
@@ -1336,9 +1336,9 @@ const handlers = {
 	TSTypeAliasDeclaration(node, /** @type {import('./types').State} */ state) {
 		state.commands.push('type ');
 		handle(node.id, state);
-		if (node.typeParameters) addTypeAnnotations(node.typeParameters, state);
+		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
 		state.commands.push(' = ');
-		addTypeAnnotations(node.typeAnnotation, state);
+		handleTypeAnnotation(node.typeAnnotation, state);
 		const t = 0;
 	},
 
