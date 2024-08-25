@@ -13,64 +13,68 @@ const acornTs = acorn.Parser.extend(tsPlugin({ allowSatisfies: true }));
 function load(input) {
 	const comments = [];
 
-	const ast = /** @type {import('@typescript-eslint/types').TSESTree.Node} */ (
-		acornTs.parse(input, {
-			ecmaVersion: 'latest',
-			sourceType: 'module',
-			locations: true,
-			onComment: (block, value, start, end) => {
-				if (block && /\n/.test(value)) {
-					let a = start;
-					while (a > 0 && input[a - 1] !== '\n') a -= 1;
+	const ast = acornTs.parse(input, {
+		ecmaVersion: 'latest',
+		sourceType: 'module',
+		locations: true,
+		onComment: (block, value, start, end) => {
+			if (block && /\n/.test(value)) {
+				let a = start;
+				while (a > 0 && input[a - 1] !== '\n') a -= 1;
 
-					let b = a;
-					while (/[ \t]/.test(input[b])) b += 1;
+				let b = a;
+				while (/[ \t]/.test(input[b])) b += 1;
 
-					const indentation = input.slice(a, b);
-					value = value.replace(new RegExp(`^${indentation}`, 'gm'), '');
-				}
-
-				comments.push({ type: block ? 'Block' : 'Line', value, start, end });
+				const indentation = input.slice(a, b);
+				value = value.replace(new RegExp(`^${indentation}`, 'gm'), '');
 			}
-		})
-	);
+
+			comments.push({ type: block ? 'Block' : 'Line', value, start, end });
+		}
+	});
 
 	walk(ast, null, {
 		_(node, { next }) {
 			let comment;
+			const commentNode = /** @type {import('../src/types').NodeWithComments} */ (
+				/** @type {any} */ (node)
+			);
 
-			// @ts-expect-error
 			while (comments[0] && comments[0].start < node.start) {
 				comment = comments.shift();
-				(node.leadingComments ??= []).push(comment);
+				(commentNode.leadingComments ??= []).push(comment);
 			}
 
 			next();
 
 			if (comments[0]) {
-				// @ts-expect-error
 				const slice = input.slice(node.end, comments[0].start);
 
 				if (/^[,) \t]*$/.test(slice)) {
-					node.trailingComments = [comments.shift()];
+					commentNode.trailingComments = [comments.shift()];
 				}
 			}
 		}
 	});
 
-	return /** @type {import('@typescript-eslint/types').TSESTree.Program} */ (ast);
+	return /** @type {import('@typescript-eslint/types').TSESTree.Program} */ (
+		/** @type {any} */ (ast)
+	);
 }
 
 /** @param {import('@typescript-eslint/types').TSESTree.Node} ast */
 function clean(ast) {
 	const cleaned = walk(ast, null, {
 		_(node, context) {
+			// @ts-expect-error
 			delete node.loc;
 			// @ts-expect-error
 			delete node.start;
 			// @ts-expect-error
 			delete node.end;
+			// @ts-expect-error
 			delete node.leadingComments;
+			// @ts-expect-error
 			delete node.trailingComments;
 			context.next();
 		},
@@ -166,8 +170,12 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			`${__dirname}/samples/${dir}/expected.${fileExtension}.map`
 		);
 
-		expect(clean(/** @type {import('@typescript-eslint/types').TSESTree.Node} */ (parsed))).toEqual(
-			clean(ast)
-		);
+		expect(
+			clean(
+				/** @type {import('@typescript-eslint/types').TSESTree.Node} */ (
+					/** @type {any} */ (parsed)
+				)
+			)
+		).toEqual(clean(ast));
 	});
 }
