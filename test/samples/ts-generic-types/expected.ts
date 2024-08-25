@@ -1,4 +1,4 @@
-type Generic<T> = { data: T }
+type Generic<T> = { data: T };
 
 const n: Generic<number> = { data: 1 };
 const s: Generic<string> = { data: 'foo' };
@@ -16,7 +16,7 @@ function barTypeof(np: Generic<typeof n>): Generic<boolean> {
 	return { data: true };
 }
 
-type DoubleGeneric<K, V> = { key: K; value: V }
+type DoubleGeneric<K, V> = { key: K; value: V };
 
 function foobar(np: DoubleGeneric<number, string>): DoubleGeneric<boolean, string> {
 	return { key: true, value: 'foo' };

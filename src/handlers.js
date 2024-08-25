@@ -1339,6 +1339,7 @@ const handlers = {
 		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
 		state.commands.push(' = ');
 		handleTypeAnnotation(node.typeAnnotation, state);
+		state.commands.push(';');
 		const t = 0;
 	},
 
