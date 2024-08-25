@@ -1366,6 +1366,12 @@ const handlers = {
 		state.commands.push(dedent, newline, '}', newline);
 	},
 
+	TSSatisfiesExpression(node, state) {
+		if (node.expression) handle(node.expression, state);
+		state.commands.push(' satisfies ');
+		handleTypeAnnotation(node.typeAnnotation, state);
+	},
+
 	TSTypeAliasDeclaration(node, state) {
 		state.commands.push('type ');
 		handle(node.id, state);

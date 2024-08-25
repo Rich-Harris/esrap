@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "type A = string;\nconst b: number = 42 satisfies A;\n\ntype C = {\n\tname: string;\n};\n\ntype D = {\n\tname: string;\n\tdescription: string;\n};\n\nconst e: D = {\n\tname: 'foo',\n\tdesciption: 'bar'\n};\n\nconst f = e satisfies D;\n"
+  ],
+  "mappings": "KAAK,CAAC;;MACA,CAAS,WAAG,EAAE,WAAW,CAAC;;KAE3B,CAAC,KACL,IAAI;KAGA,CAAC,KACL,IAAI,UACJ,WAAW;;MAGN,CAAI,EAAD,CAAC,KACT,IAAI,EAAE,KAAK,EACX,UAAU,EAAE,KAAK;MAGZ,CAAC,GAAG,CAAC,WAAW,CAAC"
+}
