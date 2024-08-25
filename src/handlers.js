@@ -1194,6 +1194,10 @@ const handlers = {
 	},
 
 	PropertyDefinition(node, state) {
+		if (node.accessibility) {
+			state.commands.push(node.accessibility, ' ');
+		}
+
 		if (node.static) {
 			state.commands.push('static ');
 		}
