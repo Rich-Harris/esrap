@@ -1,41 +1,49 @@
 // @ts-check
-import { parse } from 'acorn';
+import * as acorn from 'acorn';
+import { tsPlugin } from 'acorn-typescript';
 import { walk } from 'zimmerframe';
 import { print } from '../../src/index.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 /** @param {string} input */
 function load(input) {
 	const comments = [];
 
-	const ast = /** @type {import('@typescript-eslint/types').TSESTree.Node} */ (
-		parse(input, {
-			ecmaVersion: 'latest',
-			sourceType: 'module',
-			locations: true,
-			onComment: (block, value, start, end) => {
-				if (block && /\n/.test(value)) {
-					let a = start;
-					while (a > 0 && input[a - 1] !== '\n') a -= 1;
+	// @ts-expect-error
+	const acornTs = acorn.Parser.extend(tsPlugin({ allowSatisfies: true }));
 
-					let b = a;
-					while (/[ \t]/.test(input[b])) b += 1;
+	const ast = acornTs.parse(input, {
+		ecmaVersion: 'latest',
+		sourceType: 'module',
+		locations: true,
+		onComment: (block, value, start, end) => {
+			if (block && /\n/.test(value)) {
+				let a = start;
+				while (a > 0 && input[a - 1] !== '\n') a -= 1;
 
-					const indentation = input.slice(a, b);
-					value = value.replace(new RegExp(`^${indentation}`, 'gm'), '');
-				}
+				let b = a;
+				while (/[ \t]/.test(input[b])) b += 1;
 
-				comments.push({ type: block ? 'Block' : 'Line', value, start, end });
+				const indentation = input.slice(a, b);
+				value = value.replace(new RegExp(`^${indentation}`, 'gm'), '');
 			}
-		})
-	);
+
+			comments.push({ type: block ? 'Block' : 'Line', value, start, end });
+		}
+	});
 
 	walk(ast, null, {
 		_(node, { next }) {
+			const commentNode = /** @type {import('../../src/types').NodeWithComments} */ (
+				/** @type {any} */ (node)
+			);
 			let comment;
 
 			while (comments[0] && comments[0].start < node.start) {
 				comment = comments.shift();
-				(node.leadingComments ||= []).push(comment);
+				(commentNode.leadingComments ||= []).push(comment);
 			}
 
 			next();
@@ -44,17 +52,20 @@ function load(input) {
 				const slice = input.slice(node.end, comments[0].start);
 
 				if (/^[,) \t]*$/.test(slice)) {
-					node.trailingComments = [comments.shift()];
+					commentNode.trailingComments = [comments.shift()];
 				}
 			}
 		}
 	});
 
-	return /** @type {import('@typescript-eslint/types').TSESTree.Program} */ (ast);
+	return /** @type {import('@typescript-eslint/types').TSESTree.Program} */ (
+		/** @type {any} */ (ast)
+	);
 }
 
-const input_js = Bun.file(`${import.meta.dir}/_input.js`);
-const content = await input_js.text();
+const dir = path.resolve(fileURLToPath(import.meta.url), '..');
+const input_js = fs.readFileSync(`${dir}/_input.ts`);
+const content = input_js.toString();
 const ast = load(content);
 const { code } = print(ast, {});
-Bun.write(`${import.meta.dir}/_output.js`, code);
+fs.writeFileSync(`${dir}/_output.ts`, code);
