@@ -490,6 +490,51 @@ function handleTypeAnnotation(typeNode, state) {
 				handle(typeNode.initializer, state);
 			}
 			break;
+		case 'TSFunctionType':
+			if (typeNode.typeParameters) handleTypeAnnotation(typeNode.typeParameters, state);
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			const parameters = typeNode.parameters;
+			state.commands.push('(');
+			for (let i = 0; i < parameters.length; i++) {
+				handle(parameters[i], state);
+				if (i != parameters.length - 1) state.commands.push(',');
+			}
+			state.commands.push(') => ');
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			handleTypeAnnotation(typeNode.typeAnnotation.typeAnnotation, state);
+			break;
+		case 'TSIndexSignature':
+			const indexParameters = typeNode.parameters;
+			state.commands.push('[');
+			for (let i = 0; i < indexParameters.length; i++) {
+				handle(indexParameters[i], state);
+				if (i != indexParameters.length - 1) state.commands.push(',');
+			}
+			state.commands.push(']');
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			handleTypeAnnotation(typeNode.typeAnnotation, state);
+			break;
+		case 'TSMethodSignature':
+			handle(typeNode.key, state);
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			const parametersSignature = typeNode.parameters;
+			state.commands.push('(');
+			for (let i = 0; i < parametersSignature.length; i++) {
+				handle(parametersSignature[i], state);
+				if (i != parametersSignature.length - 1) state.commands.push(',');
+			}
+			state.commands.push(')');
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			handleTypeAnnotation(typeNode.typeAnnotation, state);
+			break;
+		case 'TSExpressionWithTypeArguments':
+			handle(typeNode.expression, state);
+			break;
 
 		default:
 			throw new Error(`Not implemented type annotation ${typeNode.type}`);
@@ -662,6 +707,13 @@ const shared = {
 			state.commands.push('extends ');
 			handle(node.superClass, state);
 			state.commands.push(' ');
+		}
+
+		if (node.implements) {
+			state.commands.push('implements ');
+			for (let i = 0; i < node.implements.length; i++) {
+				handleTypeAnnotation(node.implements[i], state);
+			}
 		}
 
 		handle(node.body, state);
@@ -1368,6 +1420,29 @@ const handlers = {
 			}
 		}
 		state.commands.push(dedent, newline, '}', newline);
+	},
+
+	TSInterfaceBody(node, state) {
+		for (let i = 0; i < node.body.length; i++) {
+			handleTypeAnnotation(node.body[i], state);
+			state.commands.push(';');
+			if (i != node.body.length - 1) state.commands.push(newline);
+		}
+	},
+
+	TSInterfaceDeclaration(node, state) {
+		state.commands.push('interface ');
+		handle(node.id, state);
+		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
+		if (node.extends) {
+			state.commands.push(' extends ');
+			for (let i = 0; i < node.extends.length; i++) {
+				handleTypeAnnotation(node.extends[i], state);
+			}
+		}
+		state.commands.push(' {', indent, newline);
+		handle(node.body, state);
+		state.commands.push(dedent, newline, '}');
 	},
 
 	TSSatisfiesExpression(node, state) {

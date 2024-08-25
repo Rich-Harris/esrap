@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "interface Test {\n\tfunc: (a: string) => Promise<void>;\n\tfunc2: () => Promise<void>;\n\ta: number;\n\tb: boolean;\n}\n\ninterface IndexSignature {\n\t[key: string]: string;\n}\n\nclass Control {\n\tprivate state: any;\n}\n\ninterface SelectableControl extends Control {\n\tselect(): void;\n}\n\nclass Button extends Control implements SelectableControl {\n\tselect() {}\n}\n\nclass TextBox extends Control {\n\tselect() {}\n}\n"
+  ],
+  "mappings": "UAAU,IAAI;CACb,IAAI,GAAG,CAAS,aAAK,OAAO;CAC5B,KAAK,QAAQ,OAAO;CACpB,CAAC;CACD,CAAC;;UAGQ,cAAc;EACtB,GAAW;;;MAGP,OAAO;SACJ,KAAK;;;UAGJ,iBAAiB,SAAS,OAAO;CAC1C,MAAM;;;MAGD,MAAM,SAAS,OAAO,YAAY,iBAAiB;CACxD,MAAM;;;MAGD,OAAO,SAAS,OAAO;CAC5B,MAAM;"
+}
