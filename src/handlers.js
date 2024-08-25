@@ -437,6 +437,9 @@ function handleTypeAnnotation(typeNode, state) {
 		case 'TSVoidKeyword':
 			state.commands.push('void');
 			break;
+		case 'TSUnknownKeyword':
+			state.commands.push('unknown');
+			break;
 		case 'TSArrayType':
 			handleTypeAnnotation(typeNode.elementType, state);
 			state.commands.push('[]');
@@ -1342,6 +1345,12 @@ const handlers = {
 			state.commands.push(' finally ');
 			handle(node.finalizer, state);
 		}
+	},
+
+	TSAsExpression(node, state) {
+		if (node.expression) handle(node.expression, state);
+		state.commands.push(' as ');
+		handleTypeAnnotation(node.typeAnnotation, state);
 	},
 
 	TSEnumDeclaration(node, state) {
