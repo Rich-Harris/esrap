@@ -434,6 +434,9 @@ function handleTypeAnnotation(typeNode, state) {
 		case 'TSAnyKeyword':
 			state.commands.push('any');
 			break;
+		case 'TSVoidKeyword':
+			state.commands.push('void');
+			break;
 		case 'TSArrayType':
 			handleTypeAnnotation(typeNode.elementType, state);
 			state.commands.push('[]');
@@ -477,8 +480,16 @@ function handleTypeAnnotation(typeNode, state) {
 			state.commands.push('typeof ');
 			handle(typeNode.exprName, state);
 			break;
+		case 'TSEnumMember':
+			handle(typeNode.id, state);
+			if (typeNode.initializer) {
+				state.commands.push(' = ');
+				handle(typeNode.initializer, state);
+			}
+			break;
 
 		default:
+			throw new Error(`Not implemented type annotation ${typeNode.type}`);
 			break;
 	}
 }
@@ -1333,7 +1344,20 @@ const handlers = {
 		}
 	},
 
-	TSTypeAliasDeclaration(node, /** @type {import('./types').State} */ state) {
+	TSEnumDeclaration(node, state) {
+		state.commands.push('enum ');
+		handle(node.id, state);
+		state.commands.push(' {', indent, newline);
+		for (let i = 0; i < node.members.length; i++) {
+			handleTypeAnnotation(node.members[i], state);
+			if (i != node.members.length - 1) {
+				state.commands.push(',', newline);
+			}
+		}
+		state.commands.push(dedent, newline, '}', newline);
+	},
+
+	TSTypeAliasDeclaration(node, state) {
 		state.commands.push('type ');
 		handle(node.id, state);
 		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
