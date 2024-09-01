@@ -461,6 +461,7 @@ function handleTypeAnnotation(typeNode, state) {
 			break;
 		case 'TSPropertySignature':
 			handle(typeNode.key, state);
+			if (typeNode.optional) state.commands.push('?');
 			if (typeNode.typeAnnotation) handleTypeAnnotation(typeNode.typeAnnotation, state);
 			break;
 		case 'TSTypeReference':
@@ -481,6 +482,11 @@ function handleTypeAnnotation(typeNode, state) {
 		case 'TSTypeParameter':
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
 			state.commands.push(typeNode.name);
+
+			if (typeNode.constraint) {
+				state.commands.push(' extends ');
+				handleTypeAnnotation(typeNode.constraint, state);
+			}
 			break;
 		case 'TSTypeQuery':
 			state.commands.push('typeof ');
@@ -578,7 +584,6 @@ function handleTypeAnnotation(typeNode, state) {
 			state.commands.push(' : ');
 			handleTypeAnnotation(typeNode.falseType, state);
 			break;
-
 		default:
 			throw new Error(`Not implemented type annotation ${typeNode.type}`);
 			break;
@@ -676,6 +681,9 @@ const shared = {
 		if (/** @type {import('@typescript-eslint/types').TSESTree.CallExpression} */ (node).optional) {
 			state.commands.push('?.');
 		}
+
+		// @ts-expect-error
+		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
 
 		const open = create_sequence();
 		const join = create_sequence();
@@ -791,6 +799,10 @@ const shared = {
 		if (node.async) state.commands.push('async ');
 		state.commands.push(node.generator ? 'function* ' : 'function ');
 		if (node.id) handle(node.id, state);
+
+		if (node.typeParameters) {
+			handleTypeAnnotation(node.typeParameters, state);
+		}
 
 		state.commands.push('(');
 		sequence(node.params, state, false, handle);
@@ -1465,6 +1477,11 @@ const handlers = {
 		state.commands.push(dedent, newline, '}', newline);
 	},
 
+	TSNonNullExpression(node, state) {
+		handle(node.expression, state);
+		state.commands.push('!');
+	},
+
 	TSInterfaceBody(node, state) {
 		for (let i = 0; i < node.body.length; i++) {
 			handleTypeAnnotation(node.body[i], state);
@@ -1502,6 +1519,12 @@ const handlers = {
 		handleTypeAnnotation(node.typeAnnotation, state);
 		state.commands.push(';');
 		const t = 0;
+	},
+
+	TSQualifiedName(node, state) {
+		handle(node.left, state);
+		state.commands.push('.');
+		handle(node.right, state);
 	},
 
 	UnaryExpression(node, state) {
