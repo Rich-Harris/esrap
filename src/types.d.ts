@@ -14,7 +14,9 @@ export type TypeAnnotationNodes =
 	| TSESTree.TSTypeParameter
 	| TSESTree.TSTypeParameterDeclaration
 	| TSESTree.TSTypeParameterInstantiation
-	| TSESTree.TSEnumMember;
+	| TSESTree.TSEnumMember
+	| TSESTree.TSInterfaceHeritage
+	| TSESTree.TSClassImplements;
 
 // `@typescript-eslint/types` differs from the official `estree` spec by handling
 // comments differently. This is a node which we can use to ensure type saftey.

@@ -440,6 +440,9 @@ function handleTypeAnnotation(typeNode, state) {
 		case 'TSUnknownKeyword':
 			state.commands.push('unknown');
 			break;
+		case 'TSNeverKeyword':
+			state.commands.push('never');
+			break;
 		case 'TSArrayType':
 			handleTypeAnnotation(typeNode.elementType, state);
 			state.commands.push('[]');
@@ -534,6 +537,46 @@ function handleTypeAnnotation(typeNode, state) {
 			break;
 		case 'TSExpressionWithTypeArguments':
 			handle(typeNode.expression, state);
+			break;
+		case 'TSTupleType':
+			state.commands.push('[');
+			for (let i = 0; i < typeNode.elementTypes.length; i++) {
+				handleTypeAnnotation(typeNode.elementTypes[i], state);
+				if (i != typeNode.elementTypes.length - 1) state.commands.push(', ');
+			}
+			state.commands.push(']');
+			break;
+		case 'TSNamedTupleMember':
+			handle(typeNode.label, state);
+			state.commands.push(': ');
+			handleTypeAnnotation(typeNode.elementType, state);
+
+			break;
+		case 'TSUnionType':
+			for (let i = 0; i < typeNode.types.length; i++) {
+				handleTypeAnnotation(typeNode.types[i], state);
+				if (i != typeNode.types.length - 1) state.commands.push(' | ');
+			}
+			break;
+		case 'TSIntersectionType':
+			const t2 = 0;
+			for (let i = 0; i < typeNode.types.length; i++) {
+				handleTypeAnnotation(typeNode.types[i], state);
+				if (i != typeNode.types.length - 1) state.commands.push(' & ');
+			}
+			break;
+		case 'TSLiteralType':
+			handle(typeNode.literal, state);
+			break;
+		case 'TSConditionalType':
+			const t4 = 0;
+			handleTypeAnnotation(typeNode.checkType, state);
+			state.commands.push(' extends ');
+			handleTypeAnnotation(typeNode.extendsType, state);
+			state.commands.push(' ? ');
+			handleTypeAnnotation(typeNode.trueType, state);
+			state.commands.push(' : ');
+			handleTypeAnnotation(typeNode.falseType, state);
 			break;
 
 		default:
