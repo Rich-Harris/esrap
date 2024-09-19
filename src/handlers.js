@@ -123,22 +123,14 @@ const OPERATOR_PRECEDENCE = {
 
 /** @type {Record<import('@typescript-eslint/types').TSESTree.Expression['type'] | 'Super' | 'RestElement', number>} */
 const EXPRESSIONS_PRECEDENCE = {
-	// TODO: add proper precedence
-	ArrayPattern: 1,
-	JSXElement: 1,
-	JSXFragment: 1,
-	ObjectPattern: 1,
-	TSAsExpression: 1,
-	TSInstantiationExpression: 1,
-	TSNonNullExpression: 1,
-	TSSatisfiesExpression: 1,
-	TSTypeAssertion: 1,
-
+	JSXFragment: 20,
+	JSXElement: 20,
+	ArrayPattern: 20,
+	ObjectPattern: 20,
 	ArrayExpression: 20,
 	TaggedTemplateExpression: 20,
 	ThisExpression: 20,
 	Identifier: 20,
-	Literal: 18,
 	TemplateLiteral: 20,
 	Super: 20,
 	SequenceExpression: 20,
@@ -148,10 +140,16 @@ const EXPRESSIONS_PRECEDENCE = {
 	ChainExpression: 19,
 	ImportExpression: 19,
 	NewExpression: 19,
+	Literal: 18,
+	TSSatisfiesExpression: 18,
+	TSInstantiationExpression: 18,
+	TSNonNullExpression: 18,
+	TSTypeAssertion: 18,
 	AwaitExpression: 17,
 	ClassExpression: 17,
 	FunctionExpression: 17,
 	ObjectExpression: 17,
+	TSAsExpression: 16,
 	UpdateExpression: 16,
 	UnaryExpression: 15,
 	BinaryExpression: 14,
@@ -1459,7 +1457,18 @@ const handlers = {
 	},
 
 	TSAsExpression(node, state) {
-		if (node.expression) handle(node.expression, state);
+		if (node.expression) {
+			const needs_parens =
+				EXPRESSIONS_PRECEDENCE[node.expression.type] < EXPRESSIONS_PRECEDENCE.TSAsExpression;
+
+			if (needs_parens) {
+				state.commands.push('(');
+				handle(node.expression, state);
+				state.commands.push(')');
+			} else {
+				handle(node.expression, state);
+			}
+		}
 		state.commands.push(' as ');
 		handleTypeAnnotation(node.typeAnnotation, state);
 	},
@@ -1506,7 +1515,18 @@ const handlers = {
 	},
 
 	TSSatisfiesExpression(node, state) {
-		if (node.expression) handle(node.expression, state);
+		if (node.expression) {
+			const needs_parens =
+				EXPRESSIONS_PRECEDENCE[node.expression.type] < EXPRESSIONS_PRECEDENCE.TSSatisfiesExpression;
+
+			if (needs_parens) {
+				state.commands.push('(');
+				handle(node.expression, state);
+				state.commands.push(')');
+			} else {
+				handle(node.expression, state);
+			}
+		}
 		state.commands.push(' satisfies ');
 		handleTypeAnnotation(node.typeAnnotation, state);
 	},
