@@ -563,7 +563,6 @@ function handleTypeAnnotation(typeNode, state) {
 			}
 			break;
 		case 'TSIntersectionType':
-			const t2 = 0;
 			for (let i = 0; i < typeNode.types.length; i++) {
 				handleTypeAnnotation(typeNode.types[i], state);
 				if (i != typeNode.types.length - 1) state.commands.push(' & ');
@@ -573,7 +572,6 @@ function handleTypeAnnotation(typeNode, state) {
 			handle(typeNode.literal, state);
 			break;
 		case 'TSConditionalType':
-			const t4 = 0;
 			handleTypeAnnotation(typeNode.checkType, state);
 			state.commands.push(' extends ');
 			handleTypeAnnotation(typeNode.extendsType, state);
@@ -584,7 +582,6 @@ function handleTypeAnnotation(typeNode, state) {
 			break;
 		default:
 			throw new Error(`Not implemented type annotation ${typeNode.type}`);
-			break;
 	}
 }
 
@@ -1538,7 +1535,6 @@ const handlers = {
 		state.commands.push(' = ');
 		handleTypeAnnotation(node.typeAnnotation, state);
 		state.commands.push(';');
-		const t = 0;
 	},
 
 	TSQualifiedName(node, state) {
