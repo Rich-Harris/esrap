@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "class A {\n\tprivate name: string;\n\tpublic firstName: string;\n\tpublic lastName: string;\n\tpublic static foo: string;\n}\n"
+  ],
+  "mappings": "MAAM,CAAC;SACE,IAAI;QACL,SAAS;QACT,QAAQ;eACD,GAAG;"
+}

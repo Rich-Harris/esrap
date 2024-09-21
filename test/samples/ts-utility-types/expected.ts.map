@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "type A = Awaited<Promise<string>>;\n\ntype Todo = {\n\ttitle: string;\n\tdescription: string;\n};\n\nfunction updateTodo(todo: Todo, fieldsToUpdate: Partial<Todo>) {\n\treturn { ...todo, ...fieldsToUpdate };\n}\n\nconst todo2: Readonly<Todo> = {\n\ttitle: 'Delete inactive users',\n\tdescription: 'foo'\n};\n\ntype CatInfo = {\n\tage: number;\n\tbreed: string;\n};\n\nconst cats: Record<string, CatInfo> = {\n\tmiffy: { age: 10, breed: 'Persian' },\n\tboris: { age: 5, breed: 'Maine Coon' },\n\tmordred: { age: 16, breed: 'British Shorthair' }\n};\n"
+  ],
+  "mappings": "KAAK,CAAC,GAAG,OAAO,CAAC,OAAO;KAEnB,IAAI,KACR,KAAK,UACL,WAAW;;SAGH,UAAU,CAAC,IAAU,EAAJ,IAAI,EAAE,cAA6B,EAAb,OAAO,CAAC,IAAI;aAC/C,IAAI,KAAK,cAAc;;;MAG9B,KAAqB,EAAd,QAAQ,CAAC,IAAI;CACzB,KAAK,EAAE,uBAAuB;CAC9B,WAAW,EAAE,KAAK;;;KAGd,OAAO,KACX,GAAG,UACH,KAAK;;MAGA,IAA6B,EAAvB,MAAM,SAAS,OAAO;CACjC,KAAK,IAAI,GAAG,EAAE,EAAE,EAAE,KAAK,EAAE,SAAS;CAClC,KAAK,IAAI,GAAG,EAAE,CAAC,EAAE,KAAK,EAAE,YAAY;CACpC,OAAO,IAAI,GAAG,EAAE,EAAE,EAAE,KAAK,EAAE,mBAAmB;"
+}

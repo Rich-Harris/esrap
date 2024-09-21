@@ -23,7 +23,7 @@ if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
  */
 
 /**
- * @param {import('estree').Node} node
+ * @param {import('@typescript-eslint/types').TSESTree.Node} node
  * @param {PrintOptions} opts
  * @returns {{ code: string, map: any }} // TODO
  */
@@ -31,6 +31,7 @@ export function print(node, opts = {}) {
 	if (Array.isArray(node)) {
 		return print(
 			{
+				//@ts-expect-error
 				type: 'Program',
 				body: node,
 				sourceType: 'module'

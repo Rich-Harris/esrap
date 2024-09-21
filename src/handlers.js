@@ -39,31 +39,33 @@ function measure(commands, from, to = commands.length) {
 }
 
 /**
- * @param {import('estree').Node} node
+ * @param {import('@typescript-eslint/types').TSESTree.Node} node
  * @param {import('./types').State} state
  */
 export function handle(node, state) {
+	const nodeWithComments = /** @type {import('./types').NodeWithComments} */ (node);
+
 	const handler = handlers[node.type];
 
 	if (!handler) {
 		throw new Error(`Not implemented ${node.type}`);
 	}
 
-	if (node.leadingComments) {
-		prepend_comments(node.leadingComments, state, false);
+	if (nodeWithComments.leadingComments) {
+		prepend_comments(nodeWithComments.leadingComments, state, false);
 	}
 
 	// @ts-expect-error
 	handler(node, state);
 
-	if (node.trailingComments) {
-		state.comments.push(node.trailingComments[0]); // there is only ever one
+	if (nodeWithComments.trailingComments) {
+		state.comments.push(nodeWithComments.trailingComments[0]); // there is only ever one
 	}
 }
 
 /**
  * @param {string} content
- * @param {import('estree').Node} node
+ * @param {import('@typescript-eslint/types').TSESTree.Node} node
  * @returns {import('./types').Chunk}
  */
 function c(content, node) {
@@ -75,7 +77,7 @@ function c(content, node) {
 }
 
 /**
- * @param {import('estree').Comment[]} comments
+ * @param {import('@typescript-eslint/types').TSESTree.Comment[]} comments
  * @param {import('./types').State} state
  * @param {boolean} newlines
  */
@@ -119,13 +121,16 @@ const OPERATOR_PRECEDENCE = {
 	'**': 13
 };
 
-/** @type {Record<import('estree').Expression['type'] | 'Super' | 'RestElement', number>} */
+/** @type {Record<import('@typescript-eslint/types').TSESTree.Expression['type'] | 'Super' | 'RestElement', number>} */
 const EXPRESSIONS_PRECEDENCE = {
+	JSXFragment: 20,
+	JSXElement: 20,
+	ArrayPattern: 20,
+	ObjectPattern: 20,
 	ArrayExpression: 20,
 	TaggedTemplateExpression: 20,
 	ThisExpression: 20,
 	Identifier: 20,
-	Literal: 18,
 	TemplateLiteral: 20,
 	Super: 20,
 	SequenceExpression: 20,
@@ -135,10 +140,16 @@ const EXPRESSIONS_PRECEDENCE = {
 	ChainExpression: 19,
 	ImportExpression: 19,
 	NewExpression: 19,
+	Literal: 18,
+	TSSatisfiesExpression: 18,
+	TSInstantiationExpression: 18,
+	TSNonNullExpression: 18,
+	TSTypeAssertion: 18,
 	AwaitExpression: 17,
 	ClassExpression: 17,
 	FunctionExpression: 17,
 	ObjectExpression: 17,
+	TSAsExpression: 16,
 	UpdateExpression: 16,
 	UnaryExpression: 15,
 	BinaryExpression: 14,
@@ -152,12 +163,14 @@ const EXPRESSIONS_PRECEDENCE = {
 
 /**
  *
- * @param {import('estree').Expression} node
- * @param {import('estree').BinaryExpression | import('estree').LogicalExpression} parent
+ * @param {import('@typescript-eslint/types').TSESTree.Expression | import('@typescript-eslint/types').TSESTree.PrivateIdentifier} node
+ * @param {import('@typescript-eslint/types').TSESTree.BinaryExpression | import('@typescript-eslint/types').TSESTree.LogicalExpression} parent
  * @param {boolean} is_right
  * @returns
  */
 function needs_parens(node, parent, is_right) {
+	if (node.type === 'PrivateIdentifier') return false;
+
 	// special case where logical expressions and coalesce expressions cannot be mixed,
 	// either of them need to be wrapped with parentheses
 	if (
@@ -186,7 +199,8 @@ function needs_parens(node, parent, is_right) {
 	}
 
 	if (
-		/** @type {import('estree').BinaryExpression} */ (node).operator === '**' &&
+		/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator ===
+			'**' &&
 		parent.operator === '**'
 	) {
 		// Exponentiation operator has right-to-left associativity
@@ -196,18 +210,20 @@ function needs_parens(node, parent, is_right) {
 	if (is_right) {
 		// Parenthesis are used if both operators have the same precedence
 		return (
-			OPERATOR_PRECEDENCE[/** @type {import('estree').BinaryExpression} */ (node).operator] <=
-			OPERATOR_PRECEDENCE[parent.operator]
+			OPERATOR_PRECEDENCE[
+				/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator
+			] <= OPERATOR_PRECEDENCE[parent.operator]
 		);
 	}
 
 	return (
-		OPERATOR_PRECEDENCE[/** @type {import('estree').BinaryExpression} */ (node).operator] <
-		OPERATOR_PRECEDENCE[parent.operator]
+		OPERATOR_PRECEDENCE[
+			/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator
+		] < OPERATOR_PRECEDENCE[parent.operator]
 	);
 }
 
-/** @param {import('estree').Node} node */
+/** @param {import('@typescript-eslint/types').TSESTree.Node} node */
 function has_call_expression(node) {
 	while (node) {
 		if (node.type === 'CallExpression') {
@@ -228,11 +244,13 @@ const grouped_expression_types = [
 ];
 
 /**
- * @param {import('estree').Node[]} nodes
+ * @param {import('@typescript-eslint/types').TSESTree.Node[]} nodes
  * @param {import('./types').State} state
  */
 const handle_body = (nodes, state) => {
-	let last_statement = /** @type {import('estree').Node} */ ({ type: 'EmptyStatement' });
+	let last_statement = /** @type {import('@typescript-eslint/types').TSESTree.Node} */ ({
+		type: 'EmptyStatement'
+	});
 	let first = true;
 	let needs_margin = false;
 
@@ -244,8 +262,9 @@ const handle_body = (nodes, state) => {
 		if (!first) state.commands.push(margin, newline);
 		first = false;
 
-		const leadingComments = statement.leadingComments;
-		delete statement.leadingComments;
+		const statementWithComments = /** @type {import('./types').NodeWithComments} */ (statement);
+		const leadingComments = statementWithComments.leadingComments;
+		delete statementWithComments.leadingComments;
 
 		if (leadingComments && leadingComments.length > 0) {
 			prepend_comments(leadingComments, state, true);
@@ -267,7 +286,9 @@ const handle_body = (nodes, state) => {
 		let add_newline = false;
 
 		while (state.comments.length) {
-			const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+			const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
+				state.comments.shift()
+			);
 
 			state.commands.push(add_newline ? newline : ' ', { type: 'Comment', comment });
 			add_newline = comment.type === 'Line';
@@ -279,7 +300,7 @@ const handle_body = (nodes, state) => {
 };
 
 /**
- * @param {import('estree').VariableDeclaration} node
+ * @param {import('@typescript-eslint/types').TSESTree.VariableDeclaration} node
  * @param {import('./types').State} state
  */
 const handle_var_declaration = (node, state) => {
@@ -314,7 +335,7 @@ const handle_var_declaration = (node, state) => {
 };
 
 /**
- * @template {import('estree').Node} T
+ * @template {import('@typescript-eslint/types').TSESTree.Node} T
  * @param {Array<T | null>} nodes
  * @param {import('./types').State} state
  * @param {boolean} spaces
@@ -355,7 +376,9 @@ function sequence(nodes, state, spaces, fn) {
 				state.commands.push(' ');
 
 				while (state.comments.length) {
-					const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+					const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
+						state.comments.shift()
+					);
 					state.commands.push({ type: 'Comment', comment });
 					if (!is_last) state.commands.push(join);
 				}
@@ -391,20 +414,196 @@ function sequence(nodes, state, spaces, fn) {
 	}
 }
 
+/**
+ * @param {import('./types').TypeAnnotationNodes} typeNode
+ * @param {import('./types').State} state
+ */
+function handleTypeAnnotation(typeNode, state) {
+	switch (typeNode.type) {
+		case 'TSNumberKeyword':
+			state.commands.push('number');
+			break;
+		case 'TSStringKeyword':
+			state.commands.push('string');
+			break;
+		case 'TSBooleanKeyword':
+			state.commands.push('boolean');
+			break;
+		case 'TSAnyKeyword':
+			state.commands.push('any');
+			break;
+		case 'TSVoidKeyword':
+			state.commands.push('void');
+			break;
+		case 'TSUnknownKeyword':
+			state.commands.push('unknown');
+			break;
+		case 'TSNeverKeyword':
+			state.commands.push('never');
+			break;
+		case 'TSArrayType':
+			handleTypeAnnotation(typeNode.elementType, state);
+			state.commands.push('[]');
+			break;
+		case 'TSTypeAnnotation':
+			state.commands.push(': ');
+			handleTypeAnnotation(typeNode.typeAnnotation, state);
+			break;
+		case 'TSTypeLiteral':
+			state.commands.push('{ ');
+			for (let i = 0; i < typeNode.members.length; i++) {
+				handleTypeAnnotation(typeNode.members[i], state);
+				if (i !== typeNode.members.length - 1) state.commands.push('; ');
+			}
+			state.commands.push(' }');
+			break;
+		case 'TSPropertySignature':
+			handle(typeNode.key, state);
+			if (typeNode.optional) state.commands.push('?');
+			if (typeNode.typeAnnotation) handleTypeAnnotation(typeNode.typeAnnotation, state);
+			break;
+		case 'TSTypeReference':
+			handle(typeNode.typeName, state);
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			if (typeNode.typeParameters) handleTypeAnnotation(typeNode.typeParameters, state);
+			break;
+		case 'TSTypeParameterInstantiation':
+		case 'TSTypeParameterDeclaration':
+			state.commands.push('<');
+			for (let i = 0; i < typeNode.params.length; i++) {
+				handleTypeAnnotation(typeNode.params[i], state);
+				if (i != typeNode.params.length - 1) state.commands.push(', ');
+			}
+			state.commands.push('>');
+			break;
+		case 'TSTypeParameter':
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			state.commands.push(typeNode.name);
+
+			if (typeNode.constraint) {
+				state.commands.push(' extends ');
+				handleTypeAnnotation(typeNode.constraint, state);
+			}
+			break;
+		case 'TSTypeQuery':
+			state.commands.push('typeof ');
+			handle(typeNode.exprName, state);
+			break;
+		case 'TSEnumMember':
+			handle(typeNode.id, state);
+			if (typeNode.initializer) {
+				state.commands.push(' = ');
+				handle(typeNode.initializer, state);
+			}
+			break;
+		case 'TSFunctionType':
+			if (typeNode.typeParameters) handleTypeAnnotation(typeNode.typeParameters, state);
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			const parameters = typeNode.parameters;
+			state.commands.push('(');
+			for (let i = 0; i < parameters.length; i++) {
+				handle(parameters[i], state);
+				if (i != parameters.length - 1) state.commands.push(',');
+			}
+			state.commands.push(') => ');
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			handleTypeAnnotation(typeNode.typeAnnotation.typeAnnotation, state);
+			break;
+		case 'TSIndexSignature':
+			const indexParameters = typeNode.parameters;
+			state.commands.push('[');
+			for (let i = 0; i < indexParameters.length; i++) {
+				handle(indexParameters[i], state);
+				if (i != indexParameters.length - 1) state.commands.push(',');
+			}
+			state.commands.push(']');
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			handleTypeAnnotation(typeNode.typeAnnotation, state);
+			break;
+		case 'TSMethodSignature':
+			handle(typeNode.key, state);
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			const parametersSignature = typeNode.parameters;
+			state.commands.push('(');
+			for (let i = 0; i < parametersSignature.length; i++) {
+				handle(parametersSignature[i], state);
+				if (i != parametersSignature.length - 1) state.commands.push(',');
+			}
+			state.commands.push(')');
+
+			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+			handleTypeAnnotation(typeNode.typeAnnotation, state);
+			break;
+		case 'TSExpressionWithTypeArguments':
+			handle(typeNode.expression, state);
+			break;
+		case 'TSTupleType':
+			state.commands.push('[');
+			for (let i = 0; i < typeNode.elementTypes.length; i++) {
+				handleTypeAnnotation(typeNode.elementTypes[i], state);
+				if (i != typeNode.elementTypes.length - 1) state.commands.push(', ');
+			}
+			state.commands.push(']');
+			break;
+		case 'TSNamedTupleMember':
+			handle(typeNode.label, state);
+			state.commands.push(': ');
+			handleTypeAnnotation(typeNode.elementType, state);
+
+			break;
+		case 'TSUnionType':
+			for (let i = 0; i < typeNode.types.length; i++) {
+				handleTypeAnnotation(typeNode.types[i], state);
+				if (i != typeNode.types.length - 1) state.commands.push(' | ');
+			}
+			break;
+		case 'TSIntersectionType':
+			for (let i = 0; i < typeNode.types.length; i++) {
+				handleTypeAnnotation(typeNode.types[i], state);
+				if (i != typeNode.types.length - 1) state.commands.push(' & ');
+			}
+			break;
+		case 'TSLiteralType':
+			handle(typeNode.literal, state);
+			break;
+		case 'TSConditionalType':
+			handleTypeAnnotation(typeNode.checkType, state);
+			state.commands.push(' extends ');
+			handleTypeAnnotation(typeNode.extendsType, state);
+			state.commands.push(' ? ');
+			handleTypeAnnotation(typeNode.trueType, state);
+			state.commands.push(' : ');
+			handleTypeAnnotation(typeNode.falseType, state);
+			break;
+		default:
+			throw new Error(`Not implemented type annotation ${typeNode.type}`);
+	}
+}
+
 /** @satisfies {Record<string, (node: any, state: import('./types').State) => undefined>} */
 const shared = {
 	/**
-	 * @param {import('estree').ArrayExpression | import('estree').ArrayPattern} node
+	 * @param {import('@typescript-eslint/types').TSESTree.ArrayExpression | import('@typescript-eslint/types').TSESTree.ArrayPattern} node
 	 * @param {import('./types').State} state
 	 */
 	'ArrayExpression|ArrayPattern': (node, state) => {
 		state.commands.push('[');
-		sequence(/** @type {import('estree').Node[]} */ (node.elements), state, false, handle);
+		sequence(
+			/** @type {import('@typescript-eslint/types').TSESTree.Node[]} */ (node.elements),
+			state,
+			false,
+			handle
+		);
 		state.commands.push(']');
 	},
 
 	/**
-	 * @param {import('estree').BinaryExpression | import('estree').LogicalExpression} node
+	 * @param {import('@typescript-eslint/types').TSESTree.BinaryExpression | import('@typescript-eslint/types').TSESTree.LogicalExpression} node
 	 * @param {import('./types').State} state
 	 */
 	'BinaryExpression|LogicalExpression': (node, state) => {
@@ -435,7 +634,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').BlockStatement | import('estree').ClassBody} node
+	 * @param {import('@typescript-eslint/types').TSESTree.BlockStatement | import('@typescript-eslint/types').TSESTree.ClassBody} node
 	 * @param {import('./types').State} state
 	 */
 	'BlockStatement|ClassBody': (node, state) => {
@@ -452,7 +651,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').CallExpression | import('estree').NewExpression} node
+	 * @param {import('@typescript-eslint/types').TSESTree.CallExpression | import('@typescript-eslint/types').TSESTree.NewExpression} node
 	 * @param {import('./types').State} state
 	 */
 	'CallExpression|NewExpression': (node, state) => {
@@ -474,9 +673,12 @@ const shared = {
 			handle(node.callee, state);
 		}
 
-		if (/** @type {import('estree').SimpleCallExpression} */ (node).optional) {
+		if (/** @type {import('@typescript-eslint/types').TSESTree.CallExpression} */ (node).optional) {
 			state.commands.push('?.');
 		}
+
+		// @ts-expect-error
+		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
 
 		const open = create_sequence();
 		const join = create_sequence();
@@ -495,7 +697,9 @@ const shared = {
 					state.commands.push(', ');
 
 					while (state.comments.length) {
-						const comment = /** @type {import('estree').Comment} */ (state.comments.shift());
+						const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
+							state.comments.shift()
+						);
 
 						state.commands.push({ type: 'Comment', comment });
 
@@ -534,7 +738,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').ClassDeclaration | import('estree').ClassExpression} node
+	 * @param {import('@typescript-eslint/types').TSESTree.ClassDeclaration | import('@typescript-eslint/types').TSESTree.ClassExpression} node
 	 * @param {import('./types').State} state
 	 */
 	'ClassDeclaration|ClassExpression': (node, state) => {
@@ -551,11 +755,18 @@ const shared = {
 			state.commands.push(' ');
 		}
 
+		if (node.implements) {
+			state.commands.push('implements ');
+			for (let i = 0; i < node.implements.length; i++) {
+				handleTypeAnnotation(node.implements[i], state);
+			}
+		}
+
 		handle(node.body, state);
 	},
 
 	/**
-	 * @param {import('estree').ForInStatement | import('estree').ForOfStatement} node
+	 * @param {import('@typescript-eslint/types').TSESTree.ForInStatement | import('@typescript-eslint/types').TSESTree.ForOfStatement} node
 	 * @param {import('./types').State} state
 	 */
 	'ForInStatement|ForOfStatement': (node, state) => {
@@ -576,7 +787,7 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('estree').FunctionDeclaration | import('estree').FunctionExpression} node
+	 * @param {import('@typescript-eslint/types').TSESTree.FunctionDeclaration | import('@typescript-eslint/types').TSESTree.FunctionExpression} node
 	 * @param {import('./types').State} state
 	 */
 	'FunctionDeclaration|FunctionExpression': (node, state) => {
@@ -584,20 +795,31 @@ const shared = {
 		state.commands.push(node.generator ? 'function* ' : 'function ');
 		if (node.id) handle(node.id, state);
 
+		if (node.typeParameters) {
+			handleTypeAnnotation(node.typeParameters, state);
+		}
+
 		state.commands.push('(');
 		sequence(node.params, state, false, handle);
-		state.commands.push(') ');
+		state.commands.push(')');
+
+		if (node.returnType) handleTypeAnnotation(node.returnType, state);
+
+		state.commands.push(' ');
 
 		handle(node.body, state);
 	},
 
 	/**
-	 * @param {import('estree').RestElement | import('estree').SpreadElement} node
+	 * @param {import('@typescript-eslint/types').TSESTree.RestElement | import('@typescript-eslint/types').TSESTree.SpreadElement} node
 	 * @param {import('./types').State} state
 	 */
 	'RestElement|SpreadElement': (node, state) => {
 		state.commands.push('...');
 		handle(node.argument, state);
+
+		// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
+		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
 	}
 };
 
@@ -728,6 +950,12 @@ const handlers = {
 		state.commands.push(c('debugger', node), ';');
 	},
 
+	Decorator(node, state) {
+		state.commands.push('@');
+		handle(node.expression, state);
+		state.commands.push(newline);
+	},
+
 	DoWhileStatement(node, state) {
 		state.commands.push('do ');
 		handle(node.body, state);
@@ -830,6 +1058,8 @@ const handlers = {
 	Identifier(node, state) {
 		let name = node.name;
 		state.commands.push(c(name, node));
+
+		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
 	},
 
 	IfStatement(node, state) {
@@ -852,13 +1082,13 @@ const handlers = {
 			return;
 		}
 
-		/** @type {import('estree').ImportNamespaceSpecifier | null} */
+		/** @type {import('@typescript-eslint/types').TSESTree.ImportNamespaceSpecifier | null} */
 		let namespace_specifier = null;
 
-		/** @type {import('estree').ImportDefaultSpecifier | null} */
+		/** @type {import('@typescript-eslint/types').TSESTree.ImportDefaultSpecifier | null} */
 		let default_specifier = null;
 
-		/** @type {import('estree').ImportSpecifier[]} */
+		/** @type {import('@typescript-eslint/types').TSESTree.ImportSpecifier[]} */
 		const named_specifiers = [];
 
 		for (const s of node.specifiers) {
@@ -872,6 +1102,7 @@ const handlers = {
 		}
 
 		state.commands.push('import ');
+		if (node.importKind == 'type') state.commands.push('type ');
 
 		if (default_specifier) {
 			state.commands.push(c(default_specifier.local.name, default_specifier));
@@ -890,6 +1121,7 @@ const handlers = {
 					state.commands.push(' as ');
 				}
 
+				if (s.importKind == 'type') state.commands.push('type ');
 				handle(s.local, state);
 			});
 			state.commands.push('}');
@@ -915,9 +1147,10 @@ const handlers = {
 	Literal(node, state) {
 		// TODO do we need to handle weird unicode characters somehow?
 		// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
-		const value =
-			node.raw ??
-			(typeof node.value === 'string' ? JSON.stringify(node.value) : String(node.value));
+
+		let value = node.raw;
+		if (!value)
+			value = typeof node.value === 'string' ? JSON.stringify(node.value) : String(node.value);
 
 		state.commands.push(c(value, node));
 	},
@@ -953,6 +1186,12 @@ const handlers = {
 	},
 
 	MethodDefinition(node, state) {
+		if (node.decorators) {
+			for (const decorator of node.decorators) {
+				handle(decorator, state);
+			}
+		}
+
 		if (node.static) {
 			state.commands.push('static ');
 		}
@@ -978,7 +1217,7 @@ const handlers = {
 		sequence(node.value.params, state, false, handle);
 		state.commands.push(') ');
 
-		handle(node.value.body, state);
+		if (node.value.body) handle(node.value.body, state);
 	},
 
 	NewExpression: shared['CallExpression|NewExpression'],
@@ -987,7 +1226,9 @@ const handlers = {
 		state.commands.push('{');
 		sequence(node.properties, state, true, (p, state) => {
 			if (p.type === 'Property' && p.value.type === 'FunctionExpression') {
-				const fn = /** @type {import('estree').FunctionExpression} */ (p.value);
+				const fn = /** @type {import('@typescript-eslint/types').TSESTree.FunctionExpression} */ (
+					p.value
+				);
 
 				if (p.kind === 'get' || p.kind === 'set') {
 					state.commands.push(p.kind + ' ');
@@ -1016,6 +1257,8 @@ const handlers = {
 		state.commands.push('{');
 		sequence(node.properties, state, true, handle);
 		state.commands.push('}');
+
+		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
 	},
 
 	// @ts-expect-error this isn't a real node type, but Acorn produces it
@@ -1053,6 +1296,10 @@ const handlers = {
 	},
 
 	PropertyDefinition(node, state) {
+		if (node.accessibility) {
+			state.commands.push(node.accessibility, ' ');
+		}
+
 		if (node.static) {
 			state.commands.push('static ');
 		}
@@ -1063,6 +1310,11 @@ const handlers = {
 			state.commands.push(']');
 		} else {
 			handle(node.key, state);
+		}
+
+		if (node.typeAnnotation) {
+			state.commands.push(': ');
+			handleTypeAnnotation(node.typeAnnotation.typeAnnotation, state);
 		}
 
 		if (node.value) {
@@ -1078,9 +1330,10 @@ const handlers = {
 
 	ReturnStatement(node, state) {
 		if (node.argument) {
+			const argumentWithComment = /** @type {import('./types').NodeWithComments} */ (node.argument);
 			const contains_comment =
-				node.argument.leadingComments &&
-				node.argument.leadingComments.some((comment) => comment.type === 'Line');
+				argumentWithComment.leadingComments &&
+				argumentWithComment.leadingComments.some((comment) => comment.type === 'Line');
 
 			state.commands.push(contains_comment ? 'return (' : 'return ');
 			handle(node.argument, state);
@@ -1174,7 +1427,7 @@ const handlers = {
 
 	ThrowStatement(node, state) {
 		state.commands.push('throw ');
-		handle(node.argument, state);
+		if (node.argument) handle(node.argument, state);
 		state.commands.push(';');
 	},
 
@@ -1198,6 +1451,96 @@ const handlers = {
 			state.commands.push(' finally ');
 			handle(node.finalizer, state);
 		}
+	},
+
+	TSAsExpression(node, state) {
+		if (node.expression) {
+			const needs_parens =
+				EXPRESSIONS_PRECEDENCE[node.expression.type] < EXPRESSIONS_PRECEDENCE.TSAsExpression;
+
+			if (needs_parens) {
+				state.commands.push('(');
+				handle(node.expression, state);
+				state.commands.push(')');
+			} else {
+				handle(node.expression, state);
+			}
+		}
+		state.commands.push(' as ');
+		handleTypeAnnotation(node.typeAnnotation, state);
+	},
+
+	TSEnumDeclaration(node, state) {
+		state.commands.push('enum ');
+		handle(node.id, state);
+		state.commands.push(' {', indent, newline);
+		for (let i = 0; i < node.members.length; i++) {
+			handleTypeAnnotation(node.members[i], state);
+			if (i != node.members.length - 1) {
+				state.commands.push(',', newline);
+			}
+		}
+		state.commands.push(dedent, newline, '}', newline);
+	},
+
+	TSNonNullExpression(node, state) {
+		handle(node.expression, state);
+		state.commands.push('!');
+	},
+
+	TSInterfaceBody(node, state) {
+		for (let i = 0; i < node.body.length; i++) {
+			handleTypeAnnotation(node.body[i], state);
+			state.commands.push(';');
+			if (i != node.body.length - 1) state.commands.push(newline);
+		}
+	},
+
+	TSInterfaceDeclaration(node, state) {
+		state.commands.push('interface ');
+		handle(node.id, state);
+		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
+		if (node.extends) {
+			state.commands.push(' extends ');
+			for (let i = 0; i < node.extends.length; i++) {
+				handleTypeAnnotation(node.extends[i], state);
+			}
+		}
+		state.commands.push(' {', indent, newline);
+		handle(node.body, state);
+		state.commands.push(dedent, newline, '}');
+	},
+
+	TSSatisfiesExpression(node, state) {
+		if (node.expression) {
+			const needs_parens =
+				EXPRESSIONS_PRECEDENCE[node.expression.type] < EXPRESSIONS_PRECEDENCE.TSSatisfiesExpression;
+
+			if (needs_parens) {
+				state.commands.push('(');
+				handle(node.expression, state);
+				state.commands.push(')');
+			} else {
+				handle(node.expression, state);
+			}
+		}
+		state.commands.push(' satisfies ');
+		handleTypeAnnotation(node.typeAnnotation, state);
+	},
+
+	TSTypeAliasDeclaration(node, state) {
+		state.commands.push('type ');
+		handle(node.id, state);
+		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
+		state.commands.push(' = ');
+		handleTypeAnnotation(node.typeAnnotation, state);
+		state.commands.push(';');
+	},
+
+	TSQualifiedName(node, state) {
+		handle(node.left, state);
+		state.commands.push('.');
+		handle(node.right, state);
 	},
 
 	UnaryExpression(node, state) {

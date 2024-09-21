@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "import type A from 'foo';\nimport type { B } from 'foo';\nimport { C, type D } from 'foo';\n"
+  ],
+  "mappings": "YAAY,CAAC,MAAM,KAAK;cACV,CAAC,QAAQ,KAAK;SACnB,CAAC,OAAO,CAAC,QAAQ,KAAK"
+}

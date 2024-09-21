@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "function foo(n: number, s: string, a: any): number {\n\treturn 1;\n}\n"
+  ],
+  "mappings": "SAAS,GAAG,CAAC,CAAS,UAAE,CAAS,UAAE,CAAM;QACjC,CAAC;"
+}
