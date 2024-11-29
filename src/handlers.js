@@ -785,8 +785,9 @@ const handlers = {
 
 	ExpressionStatement(node, state) {
 		if (
-			node.expression.type === 'AssignmentExpression' &&
-			node.expression.left.type === 'ObjectPattern'
+			node.expression.type === 'ObjectExpression' ||
+			(node.expression.type === 'AssignmentExpression' &&
+				node.expression.left.type === 'ObjectPattern')
 		) {
 			// is an AssignmentExpression to an ObjectPattern
 			state.commands.push('(');

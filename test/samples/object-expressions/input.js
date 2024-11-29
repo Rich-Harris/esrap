@@ -8,6 +8,7 @@ let blah;
 obj = { blah };
 obj = { blah };
 obj = { a: b };
+({ a: 1, b: 1 });
 
 obj = {
 	method() {
