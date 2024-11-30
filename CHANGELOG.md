@@ -1,5 +1,9 @@
 # esrap changelog
 
+## 1.2.3
+
+- Wrap object expression statements in parentheses ([#14](https://github.com/Rich-Harris/esrap/pull/14))
+
 ## 1.2.2
 
 - Correctly handle arrow functions where body includes an object expression ([#9](https://github.com/Rich-Harris/esrap/pull/9))
