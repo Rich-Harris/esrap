@@ -2293,10 +2293,7 @@
 				return bySet ? markFunction(superMatcher) : superMatcher;
 			}
 
-			function compile(
-				selector,
-				match /* Internal Use Only */
-			) {
+			function compile(selector, match) /* Internal Use Only */ {
 				var i,
 					setMatchers = [],
 					elementMatchers = [],

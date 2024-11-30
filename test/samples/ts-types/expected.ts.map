@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "type A = [x: number, y: string];\ntype B = { a: string; b: number };\n\ntype C = 'foo' | 'bar';\ntype D = C | A | B | 'foobar';\n\ntype E = A & B;\ntype F = C & 'foobar';\n\ntype Bird = { legs: 2 };\ntype Dog = { legs: 4 };\ntype Wolf = { legs: 4 };\ntype Animals = Bird | Dog | Wolf;\ntype HasFourLegs<Animal> = Animal extends { legs: 4 } ? Animal : never;\ntype FourLegs = HasFourLegs<Animals>;\n"
+  ],
+  "mappings": "KAAK,CAAC,IAAI,CAAC,UAAU,CAAC;KACjB,CAAC,KAAK,CAAC,UAAU,CAAC;KAElB,CAAC,GAAG,KAAK,GAAG,KAAK;KACjB,CAAC,GAAG,CAAC,GAAG,CAAC,GAAG,CAAC,GAAG,QAAQ;KAExB,CAAC,GAAG,CAAC,GAAG,CAAC;KACT,CAAC,GAAG,CAAC,GAAG,QAAQ;KAEhB,IAAI,KAAK,IAAI,EAAE,CAAC;KAChB,GAAG,KAAK,IAAI,EAAE,CAAC;KACf,IAAI,KAAK,IAAI,EAAE,CAAC;KAChB,OAAO,GAAG,IAAI,GAAG,GAAG,GAAG,IAAI;KAC3B,WAAW,WAAW,MAAM,WAAW,IAAI,EAAE,CAAC,KAAK,MAAM;KACzD,QAAQ,GAAG,WAAW,CAAC,OAAO"
+}

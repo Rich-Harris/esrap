@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "const a: number = 42;\nconst b = a as unknown as string;\n\ntype C = {\n\tname: string;\n};\n\ntype D = {\n\tfirstName: string;\n};\n\nconst e: C = {\n\tname: 'foo'\n} as unknown as D;\n\nconst f = (Math.random() > 0.5 ? { firstName: 'name1' } : { firstName: 'name2' }) as unknown as D;\n"
+  ],
+  "mappings": "MAAM,CAAS,WAAG,EAAE;MACd,CAAC,GAAG,CAAC;;KAEN,CAAC,KACL,IAAI;KAGA,CAAC,KACL,SAAS;;MAGJ,CAAI,EAAD,CAAC,KACT,IAAI,EAAE,KAAK,iBACI,CAAC;MAEX,CAAC,IAAI,IAAI,CAAC,MAAM,KAAK,GAAG,KAAK,SAAS,EAAE,OAAO,OAAO,SAAS,EAAE,OAAO,kBAAkB,CAAC"
+}
