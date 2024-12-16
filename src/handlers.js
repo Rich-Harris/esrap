@@ -341,7 +341,7 @@ const handle_var_declaration = (node, state) => {
  * @param {boolean} spaces
  * @param {(node: T, state: import('./types').State) => void} fn
  */
-function sequence(nodes, state, spaces, fn) {
+function sequence(nodes, state, spaces, fn, separator = ',') {
 	if (nodes.length === 0) return;
 
 	const index = state.commands.length;
@@ -369,7 +369,7 @@ function sequence(nodes, state, spaces, fn) {
 			fn(node, child_state);
 
 			if (!is_last) {
-				state.commands.push(',');
+				state.commands.push(separator);
 			}
 
 			if (state.comments.length > 0) {
@@ -391,7 +391,7 @@ function sequence(nodes, state, spaces, fn) {
 			// This is only used for ArrayPattern and ArrayExpression, but
 			// it makes more sense to have the logic here than there, because
 			// otherwise we'd duplicate a lot more stuff
-			state.commands.push(',');
+			state.commands.push(separator);
 		}
 
 		prev = node;
@@ -451,10 +451,7 @@ function handleTypeAnnotation(typeNode, state) {
 			break;
 		case 'TSTypeLiteral':
 			state.commands.push('{ ');
-			for (let i = 0; i < typeNode.members.length; i++) {
-				handleTypeAnnotation(typeNode.members[i], state);
-				if (i !== typeNode.members.length - 1) state.commands.push('; ');
-			}
+			sequence(typeNode.members, state, false, handleTypeAnnotation, ';');
 			state.commands.push(' }');
 			break;
 		case 'TSPropertySignature':
@@ -503,10 +500,8 @@ function handleTypeAnnotation(typeNode, state) {
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
 			const parameters = typeNode.parameters;
 			state.commands.push('(');
-			for (let i = 0; i < parameters.length; i++) {
-				handle(parameters[i], state);
-				if (i != parameters.length - 1) state.commands.push(',');
-			}
+			sequence(parameters, state, false, handle);
+
 			state.commands.push(') => ');
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
@@ -515,10 +510,7 @@ function handleTypeAnnotation(typeNode, state) {
 		case 'TSIndexSignature':
 			const indexParameters = typeNode.parameters;
 			state.commands.push('[');
-			for (let i = 0; i < indexParameters.length; i++) {
-				handle(indexParameters[i], state);
-				if (i != indexParameters.length - 1) state.commands.push(',');
-			}
+			sequence(indexParameters, state, false, handle);
 			state.commands.push(']');
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
@@ -530,10 +522,7 @@ function handleTypeAnnotation(typeNode, state) {
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
 			const parametersSignature = typeNode.parameters;
 			state.commands.push('(');
-			for (let i = 0; i < parametersSignature.length; i++) {
-				handle(parametersSignature[i], state);
-				if (i != parametersSignature.length - 1) state.commands.push(',');
-			}
+			sequence(parametersSignature, state, false, handle);
 			state.commands.push(')');
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
@@ -544,10 +533,7 @@ function handleTypeAnnotation(typeNode, state) {
 			break;
 		case 'TSTupleType':
 			state.commands.push('[');
-			for (let i = 0; i < typeNode.elementTypes.length; i++) {
-				handleTypeAnnotation(typeNode.elementTypes[i], state);
-				if (i != typeNode.elementTypes.length - 1) state.commands.push(', ');
-			}
+			sequence(typeNode.elementTypes, state, false, handleTypeAnnotation);
 			state.commands.push(']');
 			break;
 		case 'TSNamedTupleMember':
@@ -557,16 +543,10 @@ function handleTypeAnnotation(typeNode, state) {
 
 			break;
 		case 'TSUnionType':
-			for (let i = 0; i < typeNode.types.length; i++) {
-				handleTypeAnnotation(typeNode.types[i], state);
-				if (i != typeNode.types.length - 1) state.commands.push(' | ');
-			}
+			sequence(typeNode.types, state, false, handleTypeAnnotation, ' |');
 			break;
 		case 'TSIntersectionType':
-			for (let i = 0; i < typeNode.types.length; i++) {
-				handleTypeAnnotation(typeNode.types[i], state);
-				if (i != typeNode.types.length - 1) state.commands.push(' & ');
-			}
+			sequence(typeNode.types, state, false, handleTypeAnnotation, ' &');
 			break;
 		case 'TSLiteralType':
 			handle(typeNode.literal, state);
@@ -757,9 +737,7 @@ const shared = {
 
 		if (node.implements) {
 			state.commands.push('implements ');
-			for (let i = 0; i < node.implements.length; i++) {
-				handleTypeAnnotation(node.implements[i], state);
-			}
+			sequence(node.implements, state, false, handleTypeAnnotation);
 		}
 
 		handle(node.body, state);
@@ -1474,12 +1452,7 @@ const handlers = {
 		state.commands.push('enum ');
 		handle(node.id, state);
 		state.commands.push(' {', indent, newline);
-		for (let i = 0; i < node.members.length; i++) {
-			handleTypeAnnotation(node.members[i], state);
-			if (i != node.members.length - 1) {
-				state.commands.push(',', newline);
-			}
-		}
+		sequence(node.members, state, false, handleTypeAnnotation);
 		state.commands.push(dedent, newline, '}', newline);
 	},
 
@@ -1489,11 +1462,7 @@ const handlers = {
 	},
 
 	TSInterfaceBody(node, state) {
-		for (let i = 0; i < node.body.length; i++) {
-			handleTypeAnnotation(node.body[i], state);
-			state.commands.push(';');
-			if (i != node.body.length - 1) state.commands.push(newline);
-		}
+		sequence(node.body, state, false, handleTypeAnnotation, ';');
 	},
 
 	TSInterfaceDeclaration(node, state) {
@@ -1502,13 +1471,11 @@ const handlers = {
 		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
 		if (node.extends) {
 			state.commands.push(' extends ');
-			for (let i = 0; i < node.extends.length; i++) {
-				handleTypeAnnotation(node.extends[i], state);
-			}
+			sequence(node.extends, state, false, handleTypeAnnotation);
 		}
-		state.commands.push(' {', indent, newline);
+		state.commands.push(' {');
 		handle(node.body, state);
-		state.commands.push(dedent, newline, '}');
+		state.commands.push('}');
 	},
 
 	TSSatisfiesExpression(node, state) {
