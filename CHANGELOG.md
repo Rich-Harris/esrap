@@ -1,5 +1,9 @@
 # esrap changelog
 
+## 1.3.0
+
+- Support TypeScript nodes
+
 ## 1.2.3
 
 - Wrap object expression statements in parentheses ([#14](https://github.com/Rich-Harris/esrap/pull/14))

@@ -44,6 +44,10 @@ const { code, map } = print(ast, {
 });
 ```
 
+## TypeScript
+
+`esrap` can also print TypeScript nodes, assuming they match the ESTree-like [`@typescript-eslint/types`](https://www.npmjs.com/package/@typescript-eslint/types).
+
 ## Why not just use Prettier?
 
 Because it's ginormous.
