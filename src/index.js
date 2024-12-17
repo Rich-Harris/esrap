@@ -1,3 +1,5 @@
+/** @import { TSESTree } from '@typescript-eslint/types' */
+/** @import { Command, PrintOptions, State } from './types' */
 import { handle } from './handlers.js';
 import { encode } from '@jridgewell/sourcemap-codec';
 
@@ -15,15 +17,7 @@ if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
 }
 
 /**
- * @typedef {{
- *   sourceMapSource?: string;
- *   sourceMapContent?: string;
- *   sourceMapEncodeMappings?: boolean; // default true
- * }} PrintOptions
- */
-
-/**
- * @param {import('estree').Node} node
+ * @param {TSESTree.Node} node
  * @param {PrintOptions} opts
  * @returns {{ code: string, map: any }} // TODO
  */
@@ -31,6 +25,7 @@ export function print(node, opts = {}) {
 	if (Array.isArray(node)) {
 		return print(
 			{
+				//@ts-expect-error
 				type: 'Program',
 				body: node,
 				sourceType: 'module'
@@ -39,7 +34,7 @@ export function print(node, opts = {}) {
 		);
 	}
 
-	/** @type {import('./types').State} */
+	/** @type {State} */
 	const state = {
 		commands: [],
 		comments: [],
@@ -76,7 +71,7 @@ export function print(node, opts = {}) {
 
 	let newline = '\n';
 
-	/** @param {import('./types').Command} command */
+	/** @param {Command} command */
 	function run(command) {
 		if (typeof command === 'string') {
 			append(command);

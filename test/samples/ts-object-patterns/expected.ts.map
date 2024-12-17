@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "type User = {\n\tfirstName: string;\n\tlastName: string;\n};\n\nfunction a({ firstName, lastName }: User) {\n\tconsole.log(firstName, lastName);\n}\n"
+  ],
+  "mappings": "KAAK,IAAI,KACR,SAAS,UACT,QAAQ;;SAGA,CAAC,GAAG,SAAS,EAAE,QAAQ,IAAI,IAAI;CACvC,OAAO,CAAC,GAAG,CAAC,SAAS,EAAE,QAAQ;"
+}

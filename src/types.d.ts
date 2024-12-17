@@ -1,16 +1,39 @@
-import { Comment, Node } from 'estree';
-
-type NodeOf<T extends string, X> = X extends { type: T } ? X : never;
+import { TSESTree } from '@typescript-eslint/types';
 
 type Handler<T> = (node: T, state: State) => undefined;
 
 export type Handlers = {
-	[K in Node['type']]: Handler<NodeOf<K, Node>>;
+	[T in TSESTree.Node['type']]: Handler<Extract<TSESTree.Node, { type: T }>>;
 };
+
+export type TypeAnnotationNodes =
+	| TSESTree.TypeNode
+	| TSESTree.TypeElement
+	| TSESTree.TSTypeAnnotation
+	| TSESTree.TSPropertySignature
+	| TSESTree.TSTypeParameter
+	| TSESTree.TSTypeParameterDeclaration
+	| TSESTree.TSTypeParameterInstantiation
+	| TSESTree.TSEnumMember
+	| TSESTree.TSInterfaceHeritage
+	| TSESTree.TSClassImplements
+	| TSExpressionWithTypeArguments;
+
+type TSExpressionWithTypeArguments = {
+	type: 'TSExpressionWithTypeArguments';
+	expression: any;
+};
+
+// `@typescript-eslint/types` differs from the official `estree` spec by handling
+// comments differently. This is a node which we can use to ensure type saftey.
+export type NodeWithComments = {
+	leadingComments?: TSESTree.Comment[] | undefined;
+	trailingComments?: TSESTree.Comment[] | undefined;
+} & TSESTree.Node;
 
 export interface State {
 	commands: Command[];
-	comments: Comment[];
+	comments: TSESTree.Comment[];
 	multiline: boolean;
 }
 
@@ -47,7 +70,13 @@ export interface Sequence {
 
 export interface CommentChunk {
 	type: 'Comment';
-	comment: Comment;
+	comment: TSESTree.Comment;
 }
 
 export type Command = string | Chunk | Newline | Indent | Dedent | Sequence | CommentChunk;
+
+export interface PrintOptions {
+	sourceMapSource?: string;
+	sourceMapContent?: string;
+	sourceMapEncodeMappings?: boolean; // default true
+}

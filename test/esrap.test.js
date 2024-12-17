@@ -1,43 +1,48 @@
 // @ts-check
+/** @import { TSESTree } from '@typescript-eslint/types' */
+/** @import { NodeWithComments, PrintOptions } from '../src/types' */
 import fs from 'node:fs';
 import { expect, test } from 'vitest';
-import { parse } from 'acorn';
+import * as acorn from 'acorn';
+import { tsPlugin } from 'acorn-typescript';
 import { walk } from 'zimmerframe';
 import { print } from '../src/index.js';
+
+// @ts-expect-error
+const acornTs = acorn.Parser.extend(tsPlugin({ allowSatisfies: true }));
 
 /** @param {string} input */
 function load(input) {
 	const comments = [];
 
-	const ast = /** @type {import('estree').Node} */ (
-		parse(input, {
-			ecmaVersion: 'latest',
-			sourceType: 'module',
-			locations: true,
-			onComment: (block, value, start, end) => {
-				if (block && /\n/.test(value)) {
-					let a = start;
-					while (a > 0 && input[a - 1] !== '\n') a -= 1;
+	const ast = acornTs.parse(input, {
+		ecmaVersion: 'latest',
+		sourceType: 'module',
+		locations: true,
+		onComment: (block, value, start, end) => {
+			if (block && /\n/.test(value)) {
+				let a = start;
+				while (a > 0 && input[a - 1] !== '\n') a -= 1;
 
-					let b = a;
-					while (/[ \t]/.test(input[b])) b += 1;
+				let b = a;
+				while (/[ \t]/.test(input[b])) b += 1;
 
-					const indentation = input.slice(a, b);
-					value = value.replace(new RegExp(`^${indentation}`, 'gm'), '');
-				}
-
-				comments.push({ type: block ? 'Block' : 'Line', value, start, end });
+				const indentation = input.slice(a, b);
+				value = value.replace(new RegExp(`^${indentation}`, 'gm'), '');
 			}
-		})
-	);
+
+			comments.push({ type: block ? 'Block' : 'Line', value, start, end });
+		}
+	});
 
 	walk(ast, null, {
 		_(node, { next }) {
 			let comment;
+			const commentNode = /** @type {NodeWithComments} */ (/** @type {any} */ (node));
 
 			while (comments[0] && comments[0].start < node.start) {
 				comment = comments.shift();
-				(node.leadingComments ??= []).push(comment);
+				(commentNode.leadingComments ??= []).push(comment);
 			}
 
 			next();
@@ -46,23 +51,28 @@ function load(input) {
 				const slice = input.slice(node.end, comments[0].start);
 
 				if (/^[,) \t]*$/.test(slice)) {
-					node.trailingComments = [comments.shift()];
+					commentNode.trailingComments = [comments.shift()];
 				}
 			}
 		}
 	});
 
-	return /** @type {import('estree').Program} */ (ast);
+	return /** @type {TSESTree.Program} */ (/** @type {any} */ (ast));
 }
 
-/** @param {import('estree').Node} ast */
+/** @param {TSESTree.Node} ast */
 function clean(ast) {
 	const cleaned = walk(ast, null, {
 		_(node, context) {
+			// @ts-expect-error
 			delete node.loc;
+			// @ts-expect-error
 			delete node.start;
+			// @ts-expect-error
 			delete node.end;
+			// @ts-expect-error
 			delete node.leadingComments;
+			// @ts-expect-error
 			delete node.trailingComments;
 			context.next();
 		},
@@ -96,21 +106,23 @@ function clean(ast) {
 
 for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 	if (dir[0] === '.') continue;
+	const tsMode = dir.startsWith('ts-');
+	const fileExtension = tsMode ? 'ts' : 'js';
 
 	test(dir, async () => {
 		let input_js = '';
 		let input_json = '';
 		try {
-			input_js = fs.readFileSync(`${__dirname}/samples/${dir}/input.js`).toString();
+			input_js = fs.readFileSync(`${__dirname}/samples/${dir}/input.${fileExtension}`, 'utf-8');
 		} catch (error) {}
 		try {
 			input_json = fs.readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
 		} catch (error) {}
 
-		/** @type {import('estree').Program} */
+		/** @type {TSESTree.Program} */
 		let ast;
 
-		/** @type {import('../src/index.js').PrintOptions} */
+		/** @type {PrintOptions} */
 		let opts;
 
 		if (input_json.length > 0) {
@@ -127,12 +139,16 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 
 		const { code, map } = print(ast, opts);
 
-		fs.writeFileSync(`${__dirname}/samples/${dir}/_actual.js`, code);
-		fs.writeFileSync(`${__dirname}/samples/${dir}/_actual.js.map`, JSON.stringify(map, null, '\t'));
+		fs.writeFileSync(`${__dirname}/samples/${dir}/_actual.${fileExtension}`, code);
+		fs.writeFileSync(
+			`${__dirname}/samples/${dir}/_actual.${fileExtension}.map`,
+			JSON.stringify(map, null, '\t')
+		);
 
-		const parsed = parse(code, {
+		const parsed = acornTs.parse(code, {
 			ecmaVersion: 'latest',
-			sourceType: input_json.length > 0 ? 'script' : 'module'
+			sourceType: input_json.length > 0 ? 'script' : 'module',
+			locations: true
 		});
 
 		fs.writeFileSync(
@@ -145,13 +161,13 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 		);
 
 		expect(code.trim().replace(/^\t+$/gm, '').replaceAll('\r', '')).toMatchFileSnapshot(
-			`${__dirname}/samples/${dir}/expected.js`
+			`${__dirname}/samples/${dir}/expected.${fileExtension}`
 		);
 
 		expect(JSON.stringify(map, null, '  ').replaceAll('\\r', '')).toMatchFileSnapshot(
-			`${__dirname}/samples/${dir}/expected.js.map`
+			`${__dirname}/samples/${dir}/expected.${fileExtension}.map`
 		);
 
-		expect(clean(/** @type {import('estree').Node} */ (parsed))).toEqual(clean(ast));
+		expect(clean(/** @type {TSESTree.Node} */ (/** @type {any} */ (parsed)))).toEqual(clean(ast));
 	});
 }
