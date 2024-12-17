@@ -411,11 +411,11 @@ function sequence(nodes, state, spaces, fn, separator = ',') {
 }
 
 /**
- * @param {TypeAnnotationNodes} typeNode
+ * @param {TypeAnnotationNodes} node
  * @param {State} state
  */
-function handleTypeAnnotation(typeNode, state) {
-	switch (typeNode.type) {
+function handle_type_annotation(node, state) {
+	switch (node.type) {
 		case 'TSNumberKeyword':
 			state.commands.push('number');
 			break;
@@ -438,126 +438,126 @@ function handleTypeAnnotation(typeNode, state) {
 			state.commands.push('never');
 			break;
 		case 'TSArrayType':
-			handleTypeAnnotation(typeNode.elementType, state);
+			handle_type_annotation(node.elementType, state);
 			state.commands.push('[]');
 			break;
 		case 'TSTypeAnnotation':
 			state.commands.push(': ');
-			handleTypeAnnotation(typeNode.typeAnnotation, state);
+			handle_type_annotation(node.typeAnnotation, state);
 			break;
 		case 'TSTypeLiteral':
 			state.commands.push('{ ');
-			sequence(typeNode.members, state, false, handleTypeAnnotation, ';');
+			sequence(node.members, state, false, handle_type_annotation, ';');
 			state.commands.push(' }');
 			break;
 		case 'TSPropertySignature':
-			handle(typeNode.key, state);
-			if (typeNode.optional) state.commands.push('?');
-			if (typeNode.typeAnnotation) handleTypeAnnotation(typeNode.typeAnnotation, state);
+			handle(node.key, state);
+			if (node.optional) state.commands.push('?');
+			if (node.typeAnnotation) handle_type_annotation(node.typeAnnotation, state);
 			break;
 		case 'TSTypeReference':
-			handle(typeNode.typeName, state);
+			handle(node.typeName, state);
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-			if (typeNode.typeParameters) handleTypeAnnotation(typeNode.typeParameters, state);
+			if (node.typeParameters) handle_type_annotation(node.typeParameters, state);
 			break;
 		case 'TSTypeParameterInstantiation':
 		case 'TSTypeParameterDeclaration':
 			state.commands.push('<');
-			for (let i = 0; i < typeNode.params.length; i++) {
-				handleTypeAnnotation(typeNode.params[i], state);
-				if (i != typeNode.params.length - 1) state.commands.push(', ');
+			for (let i = 0; i < node.params.length; i++) {
+				handle_type_annotation(node.params[i], state);
+				if (i != node.params.length - 1) state.commands.push(', ');
 			}
 			state.commands.push('>');
 			break;
 		case 'TSTypeParameter':
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-			state.commands.push(typeNode.name);
+			state.commands.push(node.name);
 
-			if (typeNode.constraint) {
+			if (node.constraint) {
 				state.commands.push(' extends ');
-				handleTypeAnnotation(typeNode.constraint, state);
+				handle_type_annotation(node.constraint, state);
 			}
 			break;
 		case 'TSTypeQuery':
 			state.commands.push('typeof ');
-			handle(typeNode.exprName, state);
+			handle(node.exprName, state);
 			break;
 		case 'TSEnumMember':
-			handle(typeNode.id, state);
-			if (typeNode.initializer) {
+			handle(node.id, state);
+			if (node.initializer) {
 				state.commands.push(' = ');
-				handle(typeNode.initializer, state);
+				handle(node.initializer, state);
 			}
 			break;
 		case 'TSFunctionType':
-			if (typeNode.typeParameters) handleTypeAnnotation(typeNode.typeParameters, state);
+			if (node.typeParameters) handle_type_annotation(node.typeParameters, state);
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-			const parameters = typeNode.parameters;
+			const parameters = node.parameters;
 			state.commands.push('(');
 			sequence(parameters, state, false, handle);
 
 			state.commands.push(') => ');
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-			handleTypeAnnotation(typeNode.typeAnnotation.typeAnnotation, state);
+			handle_type_annotation(node.typeAnnotation.typeAnnotation, state);
 			break;
 		case 'TSIndexSignature':
-			const indexParameters = typeNode.parameters;
+			const indexParameters = node.parameters;
 			state.commands.push('[');
 			sequence(indexParameters, state, false, handle);
 			state.commands.push(']');
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-			handleTypeAnnotation(typeNode.typeAnnotation, state);
+			handle_type_annotation(node.typeAnnotation, state);
 			break;
 		case 'TSMethodSignature':
-			handle(typeNode.key, state);
+			handle(node.key, state);
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-			const parametersSignature = typeNode.parameters;
+			const parametersSignature = node.parameters;
 			state.commands.push('(');
 			sequence(parametersSignature, state, false, handle);
 			state.commands.push(')');
 
 			// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-			handleTypeAnnotation(typeNode.typeAnnotation, state);
+			handle_type_annotation(node.typeAnnotation, state);
 			break;
 		case 'TSExpressionWithTypeArguments':
-			handle(typeNode.expression, state);
+			handle(node.expression, state);
 			break;
 		case 'TSTupleType':
 			state.commands.push('[');
-			sequence(typeNode.elementTypes, state, false, handleTypeAnnotation);
+			sequence(node.elementTypes, state, false, handle_type_annotation);
 			state.commands.push(']');
 			break;
 		case 'TSNamedTupleMember':
-			handle(typeNode.label, state);
+			handle(node.label, state);
 			state.commands.push(': ');
-			handleTypeAnnotation(typeNode.elementType, state);
+			handle_type_annotation(node.elementType, state);
 
 			break;
 		case 'TSUnionType':
-			sequence(typeNode.types, state, false, handleTypeAnnotation, ' |');
+			sequence(node.types, state, false, handle_type_annotation, ' |');
 			break;
 		case 'TSIntersectionType':
-			sequence(typeNode.types, state, false, handleTypeAnnotation, ' &');
+			sequence(node.types, state, false, handle_type_annotation, ' &');
 			break;
 		case 'TSLiteralType':
-			handle(typeNode.literal, state);
+			handle(node.literal, state);
 			break;
 		case 'TSConditionalType':
-			handleTypeAnnotation(typeNode.checkType, state);
+			handle_type_annotation(node.checkType, state);
 			state.commands.push(' extends ');
-			handleTypeAnnotation(typeNode.extendsType, state);
+			handle_type_annotation(node.extendsType, state);
 			state.commands.push(' ? ');
-			handleTypeAnnotation(typeNode.trueType, state);
+			handle_type_annotation(node.trueType, state);
 			state.commands.push(' : ');
-			handleTypeAnnotation(typeNode.falseType, state);
+			handle_type_annotation(node.falseType, state);
 			break;
 		default:
-			throw new Error(`Not implemented type annotation ${typeNode.type}`);
+			throw new Error(`Not implemented type annotation ${node.type}`);
 	}
 }
 
@@ -649,7 +649,7 @@ const shared = {
 		}
 
 		// @ts-expect-error
-		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
+		if (node.typeParameters) handle_type_annotation(node.typeParameters, state);
 
 		const open = create_sequence();
 		const join = create_sequence();
@@ -726,7 +726,7 @@ const shared = {
 
 		if (node.implements) {
 			state.commands.push('implements ');
-			sequence(node.implements, state, false, handleTypeAnnotation);
+			sequence(node.implements, state, false, handle_type_annotation);
 		}
 
 		handle(node.body, state);
@@ -763,14 +763,14 @@ const shared = {
 		if (node.id) handle(node.id, state);
 
 		if (node.typeParameters) {
-			handleTypeAnnotation(node.typeParameters, state);
+			handle_type_annotation(node.typeParameters, state);
 		}
 
 		state.commands.push('(');
 		sequence(node.params, state, false, handle);
 		state.commands.push(')');
 
-		if (node.returnType) handleTypeAnnotation(node.returnType, state);
+		if (node.returnType) handle_type_annotation(node.returnType, state);
 
 		state.commands.push(' ');
 
@@ -786,7 +786,7 @@ const shared = {
 		handle(node.argument, state);
 
 		// @ts-expect-error `acorn-typescript` and `@typescript-esling/types` have slightly different type definitions
-		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
+		if (node.typeAnnotation) handle_type_annotation(node.typeAnnotation, state);
 	}
 };
 
@@ -1026,7 +1026,7 @@ const handlers = {
 		let name = node.name;
 		state.commands.push(c(name, node));
 
-		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
+		if (node.typeAnnotation) handle_type_annotation(node.typeAnnotation, state);
 	},
 
 	IfStatement(node, state) {
@@ -1223,7 +1223,7 @@ const handlers = {
 		sequence(node.properties, state, true, handle);
 		state.commands.push('}');
 
-		if (node.typeAnnotation) handleTypeAnnotation(node.typeAnnotation, state);
+		if (node.typeAnnotation) handle_type_annotation(node.typeAnnotation, state);
 	},
 
 	// @ts-expect-error this isn't a real node type, but Acorn produces it
@@ -1279,7 +1279,7 @@ const handlers = {
 
 		if (node.typeAnnotation) {
 			state.commands.push(': ');
-			handleTypeAnnotation(node.typeAnnotation.typeAnnotation, state);
+			handle_type_annotation(node.typeAnnotation.typeAnnotation, state);
 		}
 
 		if (node.value) {
@@ -1432,14 +1432,14 @@ const handlers = {
 			}
 		}
 		state.commands.push(' as ');
-		handleTypeAnnotation(node.typeAnnotation, state);
+		handle_type_annotation(node.typeAnnotation, state);
 	},
 
 	TSEnumDeclaration(node, state) {
 		state.commands.push('enum ');
 		handle(node.id, state);
 		state.commands.push(' {', indent, newline);
-		sequence(node.members, state, false, handleTypeAnnotation);
+		sequence(node.members, state, false, handle_type_annotation);
 		state.commands.push(dedent, newline, '}', newline);
 	},
 
@@ -1449,16 +1449,16 @@ const handlers = {
 	},
 
 	TSInterfaceBody(node, state) {
-		sequence(node.body, state, false, handleTypeAnnotation, ';');
+		sequence(node.body, state, false, handle_type_annotation, ';');
 	},
 
 	TSInterfaceDeclaration(node, state) {
 		state.commands.push('interface ');
 		handle(node.id, state);
-		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
+		if (node.typeParameters) handle_type_annotation(node.typeParameters, state);
 		if (node.extends) {
 			state.commands.push(' extends ');
-			sequence(node.extends, state, false, handleTypeAnnotation);
+			sequence(node.extends, state, false, handle_type_annotation);
 		}
 		state.commands.push(' {');
 		handle(node.body, state);
@@ -1479,15 +1479,15 @@ const handlers = {
 			}
 		}
 		state.commands.push(' satisfies ');
-		handleTypeAnnotation(node.typeAnnotation, state);
+		handle_type_annotation(node.typeAnnotation, state);
 	},
 
 	TSTypeAliasDeclaration(node, state) {
 		state.commands.push('type ');
 		handle(node.id, state);
-		if (node.typeParameters) handleTypeAnnotation(node.typeParameters, state);
+		if (node.typeParameters) handle_type_annotation(node.typeParameters, state);
 		state.commands.push(' = ');
-		handleTypeAnnotation(node.typeAnnotation, state);
+		handle_type_annotation(node.typeAnnotation, state);
 		state.commands.push(';');
 	},
 
