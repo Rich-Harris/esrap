@@ -31,8 +31,8 @@ importers:
         specifier: ^3.0.3
         version: 3.3.3
       typescript:
-        specifier: ^5.2.2
-        version: 5.5.4
+        specifier: ^5.7.2
+        version: 5.7.2
       vitest:
         specifier: ^2.1.1
         version: 2.1.1(@types/node@20.12.14)(@vitest/ui@2.1.1)
@@ -526,8 +526,8 @@ packages:
     engines: {node: '>=12.20'}
     hasBin: true
 
-  typescript@5.5.4:
-    resolution: {integrity: sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q==}
+  typescript@5.7.2:
+    resolution: {integrity: sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -996,7 +996,7 @@ snapshots:
 
   typescript@5.0.4: {}
 
-  typescript@5.5.4: {}
+  typescript@5.7.2: {}
 
   undici-types@5.26.5:
     optional: true

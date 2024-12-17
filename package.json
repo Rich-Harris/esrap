@@ -24,7 +24,7 @@
     "acorn-typescript": "^1.4.13",
     "dts-buddy": "^0.2.4",
     "prettier": "^3.0.3",
-    "typescript": "^5.2.2",
+    "typescript": "^5.7.2",
     "vitest": "^2.1.1",
     "zimmerframe": "^1.0.0"
   },
