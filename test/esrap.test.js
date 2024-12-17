@@ -1,4 +1,6 @@
 // @ts-check
+/** @import { TSESTree } from '@typescript-eslint/types' */
+/** @import { NodeWithComments, PrintOptions } from '../src/types' */
 import fs from 'node:fs';
 import { expect, test } from 'vitest';
 import * as acorn from 'acorn';
@@ -36,9 +38,7 @@ function load(input) {
 	walk(ast, null, {
 		_(node, { next }) {
 			let comment;
-			const commentNode = /** @type {import('../src/types').NodeWithComments} */ (
-				/** @type {any} */ (node)
-			);
+			const commentNode = /** @type {NodeWithComments} */ (/** @type {any} */ (node));
 
 			while (comments[0] && comments[0].start < node.start) {
 				comment = comments.shift();
@@ -57,12 +57,10 @@ function load(input) {
 		}
 	});
 
-	return /** @type {import('@typescript-eslint/types').TSESTree.Program} */ (
-		/** @type {any} */ (ast)
-	);
+	return /** @type {TSESTree.Program} */ (/** @type {any} */ (ast));
 }
 
-/** @param {import('@typescript-eslint/types').TSESTree.Node} ast */
+/** @param {TSESTree.Node} ast */
 function clean(ast) {
 	const cleaned = walk(ast, null, {
 		_(node, context) {
@@ -121,10 +119,10 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			input_json = fs.readFileSync(`${__dirname}/samples/${dir}/input.json`).toString();
 		} catch (error) {}
 
-		/** @type {import('@typescript-eslint/types').TSESTree.Program} */
+		/** @type {TSESTree.Program} */
 		let ast;
 
-		/** @type {import('../src/index.js').PrintOptions} */
+		/** @type {PrintOptions} */
 		let opts;
 
 		if (input_json.length > 0) {
@@ -170,12 +168,6 @@ for (const dir of fs.readdirSync(`${__dirname}/samples`)) {
 			`${__dirname}/samples/${dir}/expected.${fileExtension}.map`
 		);
 
-		expect(
-			clean(
-				/** @type {import('@typescript-eslint/types').TSESTree.Node} */ (
-					/** @type {any} */ (parsed)
-				)
-			)
-		).toEqual(clean(ast));
+		expect(clean(/** @type {TSESTree.Node} */ (/** @type {any} */ (parsed)))).toEqual(clean(ast));
 	});
 }

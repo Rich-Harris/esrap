@@ -1,4 +1,6 @@
 // @ts-check
+/** @import { TSESTree } from '@typescript-eslint/types' */
+/** @import { NodeWithComments } from '../../src/types' */
 import * as acorn from 'acorn';
 import { tsPlugin } from 'acorn-typescript';
 import { walk } from 'zimmerframe';
@@ -36,9 +38,7 @@ function load(input) {
 
 	walk(ast, null, {
 		_(node, { next }) {
-			const commentNode = /** @type {import('../../src/types').NodeWithComments} */ (
-				/** @type {any} */ (node)
-			);
+			const commentNode = /** @type {NodeWithComments} */ (/** @type {any} */ (node));
 			let comment;
 
 			while (comments[0] && comments[0].start < node.start) {
@@ -58,9 +58,7 @@ function load(input) {
 		}
 	});
 
-	return /** @type {import('@typescript-eslint/types').TSESTree.Program} */ (
-		/** @type {any} */ (ast)
-	);
+	return /** @type {TSESTree.Program} */ (/** @type {any} */ (ast));
 }
 
 const dir = path.resolve(fileURLToPath(import.meta.url), '..');

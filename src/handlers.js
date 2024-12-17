@@ -1,15 +1,18 @@
-/** @type {import('./types').Newline} */
+/** @import { TSESTree } from '@typescript-eslint/types' */
+/** @import { Chunk, Command, Dedent, Handlers, Indent, Newline, NodeWithComments, Sequence, State, TypeAnnotationNodes } from './types' */
+
+/** @type {Newline} */
 const newline = { type: 'Newline' };
 
-/** @type {import('./types').Indent} */
+/** @type {Indent} */
 const indent = { type: 'Indent' };
 
-/** @type {import('./types').Dedent} */
+/** @type {Dedent} */
 const dedent = { type: 'Dedent' };
 
 /**
- * @param {import('./types').Command[]} children
- * @returns {import('./types').Sequence}
+ * @param {Command[]} children
+ * @returns {Sequence}
  */
 function create_sequence(...children) {
 	return { type: 'Sequence', children };
@@ -17,7 +20,7 @@ function create_sequence(...children) {
 
 /**
  * Rough estimate of the combined width of a group of commands
- * @param {import('./types').Command[]} commands
+ * @param {Command[]} commands
  * @param {number} from
  * @param {number} to
  */
@@ -39,11 +42,11 @@ function measure(commands, from, to = commands.length) {
 }
 
 /**
- * @param {import('@typescript-eslint/types').TSESTree.Node} node
- * @param {import('./types').State} state
+ * @param {TSESTree.Node} node
+ * @param {State} state
  */
 export function handle(node, state) {
-	const nodeWithComments = /** @type {import('./types').NodeWithComments} */ (node);
+	const nodeWithComments = /** @type {NodeWithComments} */ (node);
 
 	const handler = handlers[node.type];
 
@@ -65,8 +68,8 @@ export function handle(node, state) {
 
 /**
  * @param {string} content
- * @param {import('@typescript-eslint/types').TSESTree.Node} node
- * @returns {import('./types').Chunk}
+ * @param {TSESTree.Node} node
+ * @returns {Chunk}
  */
 function c(content, node) {
 	return {
@@ -77,8 +80,8 @@ function c(content, node) {
 }
 
 /**
- * @param {import('@typescript-eslint/types').TSESTree.Comment[]} comments
- * @param {import('./types').State} state
+ * @param {TSESTree.Comment[]} comments
+ * @param {State} state
  * @param {boolean} newlines
  */
 function prepend_comments(comments, state, newlines) {
@@ -121,7 +124,7 @@ const OPERATOR_PRECEDENCE = {
 	'**': 13
 };
 
-/** @type {Record<import('@typescript-eslint/types').TSESTree.Expression['type'] | 'Super' | 'RestElement', number>} */
+/** @type {Record<TSESTree.Expression['type'] | 'Super' | 'RestElement', number>} */
 const EXPRESSIONS_PRECEDENCE = {
 	JSXFragment: 20,
 	JSXElement: 20,
@@ -163,8 +166,8 @@ const EXPRESSIONS_PRECEDENCE = {
 
 /**
  *
- * @param {import('@typescript-eslint/types').TSESTree.Expression | import('@typescript-eslint/types').TSESTree.PrivateIdentifier} node
- * @param {import('@typescript-eslint/types').TSESTree.BinaryExpression | import('@typescript-eslint/types').TSESTree.LogicalExpression} parent
+ * @param {TSESTree.Expression | TSESTree.PrivateIdentifier} node
+ * @param {TSESTree.BinaryExpression | TSESTree.LogicalExpression} parent
  * @param {boolean} is_right
  * @returns
  */
@@ -199,8 +202,7 @@ function needs_parens(node, parent, is_right) {
 	}
 
 	if (
-		/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator ===
-			'**' &&
+		/** @type {TSESTree.BinaryExpression} */ (node).operator === '**' &&
 		parent.operator === '**'
 	) {
 		// Exponentiation operator has right-to-left associativity
@@ -210,20 +212,18 @@ function needs_parens(node, parent, is_right) {
 	if (is_right) {
 		// Parenthesis are used if both operators have the same precedence
 		return (
-			OPERATOR_PRECEDENCE[
-				/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator
-			] <= OPERATOR_PRECEDENCE[parent.operator]
+			OPERATOR_PRECEDENCE[/** @type {TSESTree.BinaryExpression} */ (node).operator] <=
+			OPERATOR_PRECEDENCE[parent.operator]
 		);
 	}
 
 	return (
-		OPERATOR_PRECEDENCE[
-			/** @type {import('@typescript-eslint/types').TSESTree.BinaryExpression} */ (node).operator
-		] < OPERATOR_PRECEDENCE[parent.operator]
+		OPERATOR_PRECEDENCE[/** @type {TSESTree.BinaryExpression} */ (node).operator] <
+		OPERATOR_PRECEDENCE[parent.operator]
 	);
 }
 
-/** @param {import('@typescript-eslint/types').TSESTree.Node} node */
+/** @param {TSESTree.Node} node */
 function has_call_expression(node) {
 	while (node) {
 		if (node.type === 'CallExpression') {
@@ -244,11 +244,11 @@ const grouped_expression_types = [
 ];
 
 /**
- * @param {import('@typescript-eslint/types').TSESTree.Node[]} nodes
- * @param {import('./types').State} state
+ * @param {TSESTree.Node[]} nodes
+ * @param {State} state
  */
 const handle_body = (nodes, state) => {
-	let last_statement = /** @type {import('@typescript-eslint/types').TSESTree.Node} */ ({
+	let last_statement = /** @type {TSESTree.Node} */ ({
 		type: 'EmptyStatement'
 	});
 	let first = true;
@@ -262,7 +262,7 @@ const handle_body = (nodes, state) => {
 		if (!first) state.commands.push(margin, newline);
 		first = false;
 
-		const statementWithComments = /** @type {import('./types').NodeWithComments} */ (statement);
+		const statementWithComments = /** @type {NodeWithComments} */ (statement);
 		const leadingComments = statementWithComments.leadingComments;
 		delete statementWithComments.leadingComments;
 
@@ -286,9 +286,7 @@ const handle_body = (nodes, state) => {
 		let add_newline = false;
 
 		while (state.comments.length) {
-			const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
-				state.comments.shift()
-			);
+			const comment = /** @type {TSESTree.Comment} */ (state.comments.shift());
 
 			state.commands.push(add_newline ? newline : ' ', { type: 'Comment', comment });
 			add_newline = comment.type === 'Line';
@@ -300,8 +298,8 @@ const handle_body = (nodes, state) => {
 };
 
 /**
- * @param {import('@typescript-eslint/types').TSESTree.VariableDeclaration} node
- * @param {import('./types').State} state
+ * @param {TSESTree.VariableDeclaration} node
+ * @param {State} state
  */
 const handle_var_declaration = (node, state) => {
 	const index = state.commands.length;
@@ -335,11 +333,11 @@ const handle_var_declaration = (node, state) => {
 };
 
 /**
- * @template {import('@typescript-eslint/types').TSESTree.Node} T
+ * @template {TSESTree.Node} T
  * @param {Array<T | null>} nodes
- * @param {import('./types').State} state
+ * @param {State} state
  * @param {boolean} spaces
- * @param {(node: T, state: import('./types').State) => void} fn
+ * @param {(node: T, state: State) => void} fn
  */
 function sequence(nodes, state, spaces, fn, separator = ',') {
 	if (nodes.length === 0) return;
@@ -376,9 +374,7 @@ function sequence(nodes, state, spaces, fn, separator = ',') {
 				state.commands.push(' ');
 
 				while (state.comments.length) {
-					const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
-						state.comments.shift()
-					);
+					const comment = /** @type {TSESTree.Comment} */ (state.comments.shift());
 					state.commands.push({ type: 'Comment', comment });
 					if (!is_last) state.commands.push(join);
 				}
@@ -415,8 +411,8 @@ function sequence(nodes, state, spaces, fn, separator = ',') {
 }
 
 /**
- * @param {import('./types').TypeAnnotationNodes} typeNode
- * @param {import('./types').State} state
+ * @param {TypeAnnotationNodes} typeNode
+ * @param {State} state
  */
 function handleTypeAnnotation(typeNode, state) {
 	switch (typeNode.type) {
@@ -565,26 +561,21 @@ function handleTypeAnnotation(typeNode, state) {
 	}
 }
 
-/** @satisfies {Record<string, (node: any, state: import('./types').State) => undefined>} */
+/** @satisfies {Record<string, (node: any, state: State) => undefined>} */
 const shared = {
 	/**
-	 * @param {import('@typescript-eslint/types').TSESTree.ArrayExpression | import('@typescript-eslint/types').TSESTree.ArrayPattern} node
-	 * @param {import('./types').State} state
+	 * @param {TSESTree.ArrayExpression | TSESTree.ArrayPattern} node
+	 * @param {State} state
 	 */
 	'ArrayExpression|ArrayPattern': (node, state) => {
 		state.commands.push('[');
-		sequence(
-			/** @type {import('@typescript-eslint/types').TSESTree.Node[]} */ (node.elements),
-			state,
-			false,
-			handle
-		);
+		sequence(/** @type {TSESTree.Node[]} */ (node.elements), state, false, handle);
 		state.commands.push(']');
 	},
 
 	/**
-	 * @param {import('@typescript-eslint/types').TSESTree.BinaryExpression | import('@typescript-eslint/types').TSESTree.LogicalExpression} node
-	 * @param {import('./types').State} state
+	 * @param {TSESTree.BinaryExpression | TSESTree.LogicalExpression} node
+	 * @param {State} state
 	 */
 	'BinaryExpression|LogicalExpression': (node, state) => {
 		// TODO
@@ -614,8 +605,8 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('@typescript-eslint/types').TSESTree.BlockStatement | import('@typescript-eslint/types').TSESTree.ClassBody} node
-	 * @param {import('./types').State} state
+	 * @param {TSESTree.BlockStatement | TSESTree.ClassBody} node
+	 * @param {State} state
 	 */
 	'BlockStatement|ClassBody': (node, state) => {
 		if (node.body.length === 0) {
@@ -631,8 +622,8 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('@typescript-eslint/types').TSESTree.CallExpression | import('@typescript-eslint/types').TSESTree.NewExpression} node
-	 * @param {import('./types').State} state
+	 * @param {TSESTree.CallExpression | TSESTree.NewExpression} node
+	 * @param {State} state
 	 */
 	'CallExpression|NewExpression': (node, state) => {
 		const index = state.commands.length;
@@ -653,7 +644,7 @@ const shared = {
 			handle(node.callee, state);
 		}
 
-		if (/** @type {import('@typescript-eslint/types').TSESTree.CallExpression} */ (node).optional) {
+		if (/** @type {TSESTree.CallExpression} */ (node).optional) {
 			state.commands.push('?.');
 		}
 
@@ -677,9 +668,7 @@ const shared = {
 					state.commands.push(', ');
 
 					while (state.comments.length) {
-						const comment = /** @type {import('@typescript-eslint/types').TSESTree.Comment} */ (
-							state.comments.shift()
-						);
+						const comment = /** @type {TSESTree.Comment} */ (state.comments.shift());
 
 						state.commands.push({ type: 'Comment', comment });
 
@@ -718,8 +707,8 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('@typescript-eslint/types').TSESTree.ClassDeclaration | import('@typescript-eslint/types').TSESTree.ClassExpression} node
-	 * @param {import('./types').State} state
+	 * @param {TSESTree.ClassDeclaration | TSESTree.ClassExpression} node
+	 * @param {State} state
 	 */
 	'ClassDeclaration|ClassExpression': (node, state) => {
 		state.commands.push('class ');
@@ -744,8 +733,8 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('@typescript-eslint/types').TSESTree.ForInStatement | import('@typescript-eslint/types').TSESTree.ForOfStatement} node
-	 * @param {import('./types').State} state
+	 * @param {TSESTree.ForInStatement | TSESTree.ForOfStatement} node
+	 * @param {State} state
 	 */
 	'ForInStatement|ForOfStatement': (node, state) => {
 		state.commands.push('for ');
@@ -765,8 +754,8 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('@typescript-eslint/types').TSESTree.FunctionDeclaration | import('@typescript-eslint/types').TSESTree.FunctionExpression} node
-	 * @param {import('./types').State} state
+	 * @param {TSESTree.FunctionDeclaration | TSESTree.FunctionExpression} node
+	 * @param {State} state
 	 */
 	'FunctionDeclaration|FunctionExpression': (node, state) => {
 		if (node.async) state.commands.push('async ');
@@ -789,8 +778,8 @@ const shared = {
 	},
 
 	/**
-	 * @param {import('@typescript-eslint/types').TSESTree.RestElement | import('@typescript-eslint/types').TSESTree.SpreadElement} node
-	 * @param {import('./types').State} state
+	 * @param {TSESTree.RestElement | TSESTree.SpreadElement} node
+	 * @param {State} state
 	 */
 	'RestElement|SpreadElement': (node, state) => {
 		state.commands.push('...');
@@ -801,7 +790,7 @@ const shared = {
 	}
 };
 
-/** @type {import('./types').Handlers} */
+/** @type {Handlers} */
 const handlers = {
 	ArrayExpression: shared['ArrayExpression|ArrayPattern'],
 
@@ -1060,13 +1049,13 @@ const handlers = {
 			return;
 		}
 
-		/** @type {import('@typescript-eslint/types').TSESTree.ImportNamespaceSpecifier | null} */
+		/** @type {TSESTree.ImportNamespaceSpecifier | null} */
 		let namespace_specifier = null;
 
-		/** @type {import('@typescript-eslint/types').TSESTree.ImportDefaultSpecifier | null} */
+		/** @type {TSESTree.ImportDefaultSpecifier | null} */
 		let default_specifier = null;
 
-		/** @type {import('@typescript-eslint/types').TSESTree.ImportSpecifier[]} */
+		/** @type {TSESTree.ImportSpecifier[]} */
 		const named_specifiers = [];
 
 		for (const s of node.specifiers) {
@@ -1204,9 +1193,7 @@ const handlers = {
 		state.commands.push('{');
 		sequence(node.properties, state, true, (p, state) => {
 			if (p.type === 'Property' && p.value.type === 'FunctionExpression') {
-				const fn = /** @type {import('@typescript-eslint/types').TSESTree.FunctionExpression} */ (
-					p.value
-				);
+				const fn = /** @type {TSESTree.FunctionExpression} */ (p.value);
 
 				if (p.kind === 'get' || p.kind === 'set') {
 					state.commands.push(p.kind + ' ');
@@ -1308,7 +1295,7 @@ const handlers = {
 
 	ReturnStatement(node, state) {
 		if (node.argument) {
-			const argumentWithComment = /** @type {import('./types').NodeWithComments} */ (node.argument);
+			const argumentWithComment = /** @type {NodeWithComments} */ (node.argument);
 			const contains_comment =
 				argumentWithComment.leadingComments &&
 				argumentWithComment.leadingComments.some((comment) => comment.type === 'Line');

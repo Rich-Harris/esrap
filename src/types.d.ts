@@ -74,3 +74,9 @@ export interface CommentChunk {
 }
 
 export type Command = string | Chunk | Newline | Indent | Dedent | Sequence | CommentChunk;
+
+export interface PrintOptions {
+	sourceMapSource?: string;
+	sourceMapContent?: string;
+	sourceMapEncodeMappings?: boolean; // default true
+}
