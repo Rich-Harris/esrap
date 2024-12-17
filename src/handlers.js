@@ -46,7 +46,7 @@ function measure(commands, from, to = commands.length) {
  * @param {State} state
  */
 export function handle(node, state) {
-	const nodeWithComments = /** @type {NodeWithComments} */ (node);
+	const node_with_comments = /** @type {NodeWithComments} */ (node);
 
 	const handler = handlers[node.type];
 
@@ -54,15 +54,15 @@ export function handle(node, state) {
 		throw new Error(`Not implemented ${node.type}`);
 	}
 
-	if (nodeWithComments.leadingComments) {
-		prepend_comments(nodeWithComments.leadingComments, state, false);
+	if (node_with_comments.leadingComments) {
+		prepend_comments(node_with_comments.leadingComments, state, false);
 	}
 
 	// @ts-expect-error
 	handler(node, state);
 
-	if (nodeWithComments.trailingComments) {
-		state.comments.push(nodeWithComments.trailingComments[0]); // there is only ever one
+	if (node_with_comments.trailingComments) {
+		state.comments.push(node_with_comments.trailingComments[0]); // there is only ever one
 	}
 }
 
@@ -262,12 +262,12 @@ const handle_body = (nodes, state) => {
 		if (!first) state.commands.push(margin, newline);
 		first = false;
 
-		const statementWithComments = /** @type {NodeWithComments} */ (statement);
-		const leadingComments = statementWithComments.leadingComments;
-		delete statementWithComments.leadingComments;
+		const statement_with_comments = /** @type {NodeWithComments} */ (statement);
+		const leading_comments = statement_with_comments.leadingComments;
+		delete statement_with_comments.leadingComments;
 
-		if (leadingComments && leadingComments.length > 0) {
-			prepend_comments(leadingComments, state, true);
+		if (leading_comments && leading_comments.length > 0) {
+			prepend_comments(leading_comments, state, true);
 		}
 
 		const child_state = { ...state, multiline: false };
@@ -626,8 +626,6 @@ const shared = {
 	 * @param {State} state
 	 */
 	'CallExpression|NewExpression': (node, state) => {
-		const index = state.commands.length;
-
 		if (node.type === 'NewExpression') {
 			state.commands.push('new ');
 		}
