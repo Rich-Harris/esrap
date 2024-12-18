@@ -1,5 +1,9 @@
 # esrap changelog
 
+## 1.3.1
+
+- Fix types
+
 ## 1.3.0
 
 - Support TypeScript nodes

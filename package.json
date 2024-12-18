@@ -30,7 +30,7 @@
   },
   "scripts": {
     "check": "tsc",
-    "prepublishOnly": "pnpm test && dts-buddy -m dts-buddy:./src/public.d.ts",
+    "prepublishOnly": "pnpm test && dts-buddy -m esrap:./src/public.d.ts",
     "sandbox": "node test/sandbox/index.js",
     "test": "vitest --run",
     "test:ui": "vitest --ui"
