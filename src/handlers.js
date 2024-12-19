@@ -934,7 +934,12 @@ const handlers = {
 	},
 
 	ExportAllDeclaration(node, state) {
-		state.commands.push('export * from ');
+		state.commands.push('export * ');
+		if (node.exported) {
+			state.commands.push('as ');
+			handle(node.exported, state);
+		}
+		state.commands.push(' from ');
 		handle(node.source, state);
 		state.commands.push(';');
 	},
