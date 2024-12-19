@@ -1,12 +1,16 @@
 # esrap changelog
 
+## 1.3.2
+
+- Loosen types ([#15](https://github.com/Rich-Harris/esrap/pull/15))
+
 ## 1.3.1
 
 - Fix types
 
 ## 1.3.0
 
-- Support TypeScript nodes
+- Support TypeScript nodes ([#13](https://github.com/Rich-Harris/esrap/pull/13))
 
 ## 1.2.3
 
