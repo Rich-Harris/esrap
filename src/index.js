@@ -17,7 +17,7 @@ if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
 }
 
 /**
- * @param {TSESTree.Node} node
+ * @param {{ type: string, [key: string]: any }} node
  * @param {PrintOptions} opts
  * @returns {{ code: string, map: any }} // TODO
  */
@@ -25,7 +25,6 @@ export function print(node, opts = {}) {
 	if (Array.isArray(node)) {
 		return print(
 			{
-				//@ts-expect-error
 				type: 'Program',
 				body: node,
 				sourceType: 'module'
@@ -41,7 +40,7 @@ export function print(node, opts = {}) {
 		multiline: false
 	};
 
-	handle(node, state);
+	handle(/** @type {TSESTree.Node} */ (node), state);
 
 	/** @typedef {[number, number, number, number]} Segment */
 
