@@ -40,8 +40,8 @@ You can optionally pass information that will be used while generating the outpu
 ```js
 const { code, map } = print(ast, {
   sourceMapSource: 'input.js',
-  sourceMapContent: fs.readFileSync('input.js', 'utf-8')
-  indent: ' ' // default '\t'
+  sourceMapContent: fs.readFileSync('input.js', 'utf-8'),
+  indent: ' ', // default '\t'
   quotes: 'single' // or 'double', default 'single'
 });
 ```
