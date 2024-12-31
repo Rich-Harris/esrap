@@ -69,6 +69,9 @@ export function print(node, opts = {}) {
 	}
 
 	let newline = '\n';
+	const indent = opts.indent ?? '\t';
+	const quote_type = opts.quote ?? 'single';
+	const quote = quote_type === 'single' ? "'" : '"';
 
 	/** @param {Command} command */
 	function run(command) {
@@ -90,7 +93,15 @@ export function print(node, opts = {}) {
 					]);
 				}
 
-				append(command.content);
+				let content = command.content;
+
+				if (command.quote) {
+					if (content.includes(quote)) content = content.replaceAll(quote, `\\${quote}`);
+
+					content = `${quote}${content}${quote}`;
+				}
+
+				append(content);
 
 				if (loc) {
 					current_line.push([
@@ -108,11 +119,11 @@ export function print(node, opts = {}) {
 				break;
 
 			case 'Indent':
-				newline += '\t';
+				newline += indent;
 				break;
 
 			case 'Dedent':
-				newline = newline.slice(0, -1);
+				newline = newline.slice(0, -indent.length);
 				break;
 
 			case 'Sequence':

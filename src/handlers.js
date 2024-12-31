@@ -69,12 +69,14 @@ export function handle(node, state) {
 /**
  * @param {string} content
  * @param {TSESTree.Node} node
+ * @param {boolean} quote
  * @returns {Chunk}
  */
-function c(content, node) {
+function c(content, node, quote = false) {
 	return {
 		type: 'Chunk',
 		content,
+		quote,
 		loc: node?.loc ?? null
 	};
 }
@@ -1115,10 +1117,16 @@ const handlers = {
 		// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
 
 		let value = node.raw;
-		if (!value)
-			value = typeof node.value === 'string' ? JSON.stringify(node.value) : String(node.value);
+		if (value) {
+			state.commands.push(c(value, node));
+			return;
+		}
 
-		state.commands.push(c(value, node));
+		const isString = typeof node.value === 'string';
+		const addQuotes = isString;
+		value = isString ? node.value : String(node.value);
+
+		state.commands.push(c(value, node, addQuotes));
 	},
 
 	LogicalExpression: shared['BinaryExpression|LogicalExpression'],

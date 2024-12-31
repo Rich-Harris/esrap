@@ -40,6 +40,7 @@ export interface State {
 export interface Chunk {
 	type: 'Chunk';
 	content: string;
+	quote: boolean;
 	loc: null | {
 		start: { line: number; column: number };
 		end: { line: number; column: number };
@@ -79,4 +80,6 @@ export interface PrintOptions {
 	sourceMapSource?: string;
 	sourceMapContent?: string;
 	sourceMapEncodeMappings?: boolean; // default true
+	indent?: string; // default tab
+	quote?: 'single' | 'double'; // default single
 }
