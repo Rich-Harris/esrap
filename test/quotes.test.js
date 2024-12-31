@@ -12,8 +12,8 @@ import { TSESTree } from '@typescript-eslint/types';
  */
 function clean(ast) {
 	walk(ast, null, {
-		_(node, { next }) {
-			if (node.type === 'Literal') delete node.raw;
+		Literal(node, { next }) {
+			delete node.raw;
 
 			next();
 		}
