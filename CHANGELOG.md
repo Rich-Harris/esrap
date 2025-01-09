@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.3.6
+
+### Patch Changes
+
+- 333b32c: chore: verify changesets setup, again
+
 ## 1.3.5
 
 ### Patch Changes
