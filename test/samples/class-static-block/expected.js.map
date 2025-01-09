@@ -7,5 +7,5 @@
   "sourcesContent": [
     "class Foo {\n\tstatic {\n\t\tthis.abc = 1;\n\t}\n}"
   ],
-  "mappings": "MAAM,GAAG;;EAEP,IAAI,CAAC,GAAG,GAAG,CAAC;;"
+  "mappings": "MAAM,GAAG,CAAC,CAAC;;EAET,IAAI,CAAC,GAAG,GAAG,CAAC;;AAEd,CAAC"
 }

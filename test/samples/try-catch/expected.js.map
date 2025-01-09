@@ -7,5 +7,5 @@
   "sourcesContent": [
     "try {\n\tfoo();\n} catch {\n\tbar();\n}\n\ntry {\n\tfoo();\n} catch(e) {\n\tbar(e);\n} finally {\n\tbaz();\n}"
   ],
-  "mappings": ";CACC,GAAG;;CAEH,GAAG;;;;CAIH,GAAG;QACI,CAAC;CACR,GAAG,CAAC,CAAC;;CAEL,GAAG;"
+  "mappings": "IAAI,CAAC;CACJ,GAAG;AACJ,CAAC,OAAO,CAAC;CACR,GAAG;AACJ,CAAC;;IAEG,CAAC;CACJ,GAAG;AACJ,CAAC,OAAO,CAAC,EAAE,CAAC;CACX,GAAG,CAAC,CAAC;AACN,CAAC,SAAS,CAAC;CACV,GAAG;AACJ,CAAC"
 }

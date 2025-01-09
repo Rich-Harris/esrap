@@ -7,5 +7,5 @@
   "sourcesContent": [
     "interface Test {\n\tfunc: (a: string) => Promise<void>;\n\tfunc2: () => Promise<void>;\n\ta: number;\n\tb: boolean;\n}\n\ninterface IndexSignature {\n\t[key: string]: string;\n}\n\nclass Control {\n\tprivate state: any;\n}\n\ninterface SelectableControl extends Control {\n\tselect(): void;\n}\n\nclass Button extends Control implements SelectableControl {\n\tselect() {}\n}\n\nclass TextBox extends Control {\n\tselect() {}\n}\n"
   ],
-  "mappings": "UAAU,IAAI;CACb,IAAI,GAAG,CAAS,aAAK,OAAO;CAC5B,KAAK,QAAQ,OAAO;CACpB,CAAC;CACD,CAAC;;;UAGQ,cAAc,GACtB,GAAW;;MAGP,OAAO;SACJ,KAAK;;;UAGJ,iBAAiB,SAAS,OAAO,EAC1C,MAAM;;MAGD,MAAM,SAAS,OAAO,YAAY,iBAAiB;CACxD,MAAM;;;MAGD,OAAO,SAAS,OAAO;CAC5B,MAAM;"
+  "mappings": "UAAU,IAAI;CACb,IAAI,GAAG,CAAS,aAAK,OAAO;CAC5B,KAAK,QAAQ,OAAO;CACpB,CAAC;CACD,CAAC;;;UAGQ,cAAc,GACtB,GAAW;;MAGP,OAAO,CAAC,CAAC;SACN,KAAK;AACd,CAAC;;UAES,iBAAiB,SAAS,OAAO,EAC1C,MAAM;;MAGD,MAAM,SAAS,OAAO,YAAY,iBAAiB,AAAC,CAAC;CAC1D,MAAM,GAAG,CAAC,AAAA,CAAC;AACZ,CAAC;;MAEK,OAAO,SAAS,OAAO,CAAC,CAAC;CAC9B,MAAM,GAAG,CAAC,AAAA,CAAC;AACZ,CAAC"
 }

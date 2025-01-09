@@ -7,5 +7,5 @@
   "sourcesContent": [
     "console.log(null, /* xxx */ new Date(), /** zzz */ a.b.c()); // www\n\nconsole.log(\n\tnull, // foo\n\tnew Date()\n);\n\nconsole.log(\n\tnull, // foo\n\tnew Date()\n);\n\nconsole.log(null, /* xxx */ function (a, b) {\n\t// yyy\n\treturn a + b;\n});\n\nconsole.log(\"1\");\n"
   ],
-  "mappings": "AAAA,OAAO,CAAC,GAAG,CAAC,IAAI,gBAAgB,IAAI,eAAe,CAAC,CAAC,CAAC,CAAC,CAAC;;AAExD,OAAO,CAAC,GAAG;CACV,IAAI;KACA,IAAI;;;AAGT,OAAO,CAAC,GAAG;CACV,IAAI;KACA,IAAI;;;AAGT,OAAO,CAAC,GAAG,CAAC,IAAI,sBAAsB,CAAC,EAAE,CAAC;;QAElC,CAAC,GAAG,CAAC;;;AAGb,OAAO,CAAC,GAAG,CAAC,GAAG"
+  "mappings": "AAAA,OAAO,CAAC,GAAG,CAAC,IAAI,gBAAgB,IAAI,eAAe,CAAC,CAAC,CAAC,CAAC,CAAC;;AAExD,OAAO,CAAC,GAAG;CACV,IAAI;KACA,IAAI;;;AAGT,OAAO,CAAC,GAAG;CACV,IAAI;KACA,IAAI;;;AAGT,OAAO,CAAC,GAAG,CAAC,IAAI,sBAAsB,CAAC,EAAE,CAAC,EAAE,CAAC;;QAErC,CAAC,GAAG,CAAC;AACb,CAAC;;AAED,OAAO,CAAC,GAAG,CAAC,GAAG"
 }

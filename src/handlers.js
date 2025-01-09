@@ -656,16 +656,26 @@ const shared = {
 	 * @param {State} state
 	 */
 	'BlockStatement|ClassBody': (node, state) => {
-		if (node.body.length === 0) {
-			state.commands.push('{}');
-			return;
+		if (node.loc) {
+			const { line, column } = node.loc.start;
+			state.commands.push(l(line, column), '{', l(line, column + 1));
+		} else {
+			state.commands.push('{');
 		}
 
-		state.multiline = true;
+		if (node.body.length > 0) {
+			state.multiline = true;
+			state.commands.push(indent, newline);
+			handle_body(node.body, state);
+			state.commands.push(dedent, newline);
+		}
 
-		state.commands.push('{', indent, newline);
-		handle_body(node.body, state);
-		state.commands.push(dedent, newline, '}');
+		if (node.loc) {
+			const { line, column } = node.loc.end;
+			state.commands.push(l(line, column - 1), '}', l(line, column));
+		} else {
+			state.commands.push('}');
+		}
 	},
 
 	/**

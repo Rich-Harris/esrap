@@ -7,5 +7,5 @@
   "sourcesContent": [
     "enum UserResponse {\n\tNo = 0,\n\tYes = 1\n}\n\nfunction respond(recipient: string, message: UserResponse): void {\n\t// ...\n}\n\nrespond('Princess Caroline', UserResponse.Yes);\n"
   ],
-  "mappings": "KAAK,YAAY;CAChB,EAAE,GAAG,CAAC,EACN,GAAG,GAAG,CAAC;;;SAGC,OAAO,CAAC,SAAiB,UAAE,OAAqB,EAAZ,YAAY;AAIzD,OAAO,CAAC,mBAAmB,EAAE,YAAY,CAAC,GAAG"
+  "mappings": "KAAK,YAAY;CAChB,EAAE,GAAG,CAAC,EACN,GAAG,GAAG,CAAC;;;SAGC,OAAO,CAAC,SAAiB,UAAE,OAAqB,EAAZ,YAAY,QAAQ,CAAC,AAElE,CAAC;AAED,OAAO,CAAC,mBAAmB,EAAE,YAAY,CAAC,GAAG"
 }

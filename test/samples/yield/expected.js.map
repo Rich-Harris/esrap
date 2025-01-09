@@ -7,5 +7,5 @@
   "sourcesContent": [
     "function* foo() {\n\tyield;\n}\n\nfunction* bar() {\n\tyield* 1;\n}"
   ],
-  "mappings": "UAAU,GAAG;;;;UAIH,GAAG;QACL,CAAC;"
+  "mappings": "UAAU,GAAG,GAAG,CAAC;;AAEjB,CAAC;;UAES,GAAG,GAAG,CAAC;QACT,CAAC;AACT,CAAC"
 }
