@@ -30,6 +30,8 @@
     "zimmerframe": "^1.0.0"
   },
   "scripts": {
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish",
     "check": "tsc",
     "prepublishOnly": "pnpm test && dts-buddy -m esrap:./src/public.d.ts",
     "sandbox": "node test/sandbox/index.js",
