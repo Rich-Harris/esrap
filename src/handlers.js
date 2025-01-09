@@ -558,6 +558,12 @@ function handle_type_annotation(node, state) {
 			state.commands.push(' : ');
 			handle_type_annotation(node.falseType, state);
 			break;
+		case 'TSIndexedAccessType':
+			handle_type_annotation(node.objectType, state);
+			state.commands.push('[');
+			handle_type_annotation(node.indexType, state);
+			state.commands.push(']');
+			break;
 		default:
 			throw new Error(`Not implemented type annotation ${node.type}`);
 	}
@@ -936,7 +942,12 @@ const handlers = {
 	},
 
 	ExportAllDeclaration(node, state) {
-		state.commands.push('export * from ');
+		state.commands.push('export * ');
+		if (node.exported) {
+			state.commands.push('as ');
+			handle(node.exported, state);
+		}
+		state.commands.push(' from ');
 		handle(node.source, state);
 		state.commands.push(';');
 	},
