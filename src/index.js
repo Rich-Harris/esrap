@@ -87,29 +87,13 @@ export function print(node, opts = {}) {
 		}
 
 		switch (command.type) {
-			case 'Chunk':
-				const loc = command.loc;
-
-				if (loc) {
-					current_line.push([
-						current_column,
-						0, // source index is always zero
-						loc.start.line - 1,
-						loc.start.column
-					]);
-				}
-
-				append(command.content);
-
-				if (loc) {
-					current_line.push([
-						current_column,
-						0, // source index is always zero
-						loc.end.line - 1,
-						loc.end.column
-					]);
-				}
-
+			case 'Location':
+				current_line.push([
+					current_column,
+					0, // source index is always zero
+					command.line,
+					command.column
+				]);
 				break;
 
 			case 'Newline':

@@ -38,13 +38,10 @@ export interface State {
 	quote: "'" | '"';
 }
 
-export interface Chunk {
-	type: 'Chunk';
-	content: string;
-	loc: null | {
-		start: { line: number; column: number };
-		end: { line: number; column: number };
-	};
+export interface Location {
+	type: 'Location';
+	line: number;
+	column: number;
 }
 
 export interface Newline {
@@ -69,7 +66,7 @@ export interface CommentChunk {
 	comment: TSESTree.Comment;
 }
 
-export type Command = string | Chunk | Newline | Indent | Dedent | CommentChunk | Command[];
+export type Command = string | Location | Newline | Indent | Dedent | CommentChunk | Command[];
 
 export interface PrintOptions {
 	sourceMapSource?: string;

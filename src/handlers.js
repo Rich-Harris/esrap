@@ -30,9 +30,10 @@ function measure(commands, from, to = commands.length) {
 		if (typeof command === 'string') {
 			total += command.length;
 		} else if (Array.isArray(command)) {
-			total += 2; // assume this is ', '
-		} else if (command.type === 'Chunk') {
-			total += command.content.length;
+			total +=
+				command.length === 0
+					? 2 // assume this is ', '
+					: measure(command, 0);
 		}
 	}
 
@@ -65,16 +66,31 @@ export function handle(node, state) {
 }
 
 /**
+ * @param {number} line
+ * @param {number} column
+ * @returns {Location}
+ */
+function l(line, column) {
+	return {
+		type: 'Location',
+		line,
+		column
+	};
+}
+
+/**
  * @param {string} content
  * @param {TSESTree.Node} node
  * @returns {Chunk}
  */
 function c(content, node) {
-	return {
-		type: 'Chunk',
-		content,
-		loc: node?.loc ?? null
-	};
+	return node.loc
+		? [
+				l(node.loc.start.line - 1, node.loc.start.column),
+				content,
+				l(node.loc.end.line - 1, node.loc.end.column)
+			]
+		: content;
 }
 
 /**
