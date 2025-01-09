@@ -1,5 +1,5 @@
 /** @import { TSESTree } from '@typescript-eslint/types' */
-/** @import { Chunk, Command, Dedent, Handlers, Indent, Newline, NodeWithComments, Sequence, State, TypeAnnotationNodes } from './types' */
+/** @import { Command, Dedent, Handlers, Location, Indent, Newline, NodeWithComments, State, TypeAnnotationNodes } from './types' */
 
 /** @type {Newline} */
 const newline = { type: 'Newline' };
@@ -11,11 +11,10 @@ const indent = { type: 'Indent' };
 const dedent = { type: 'Dedent' };
 
 /**
- * @param {Command[]} children
- * @returns {Sequence}
+ * @returns {Command[]}
  */
-function create_sequence(...children) {
-	return { type: 'Sequence', children };
+function create_sequence() {
+	return [];
 }
 
 /**
@@ -30,11 +29,11 @@ function measure(commands, from, to = commands.length) {
 		const command = commands[i];
 		if (typeof command === 'string') {
 			total += command.length;
-		} else if (command.type === 'Chunk') {
-			total += command.content.length;
-		} else if (command.type === 'Sequence') {
-			// assume this is ', '
-			total += 2;
+		} else if (Array.isArray(command)) {
+			total +=
+				command.length === 0
+					? 2 // assume this is ', '
+					: measure(command, 0);
 		}
 	}
 
@@ -67,16 +66,31 @@ export function handle(node, state) {
 }
 
 /**
+ * @param {number} line
+ * @param {number} column
+ * @returns {Location}
+ */
+function l(line, column) {
+	return {
+		type: 'Location',
+		line,
+		column
+	};
+}
+
+/**
  * @param {string} content
  * @param {TSESTree.Node} node
- * @returns {Chunk}
+ * @returns {string | Command[]}
  */
 function c(content, node) {
-	return {
-		type: 'Chunk',
-		content,
-		loc: node?.loc ?? null
-	};
+	return node.loc
+		? [
+				l(node.loc.start.line, node.loc.start.column),
+				content,
+				l(node.loc.end.line, node.loc.end.column)
+			]
+		: content;
 }
 
 /**
@@ -288,7 +302,7 @@ const handle_body = (nodes, state) => {
 				grouped_expression_types.includes(last_statement.type)) &&
 				last_statement.type !== statement.type)
 		) {
-			margin.children.push('\n');
+			margin.push('\n');
 		}
 
 		let add_newline = false;
@@ -332,11 +346,11 @@ const handle_var_declaration = (node, state) => {
 
 	if (multiline) {
 		state.multiline = true;
-		if (node.declarations.length > 1) open.children.push(indent);
-		join.children.push(',', newline);
+		if (node.declarations.length > 1) open.push(indent);
+		join.push(',', newline);
 		if (node.declarations.length > 1) state.commands.push(dedent);
 	} else {
-		join.children.push(', ');
+		join.push(', ');
 	}
 };
 
@@ -408,13 +422,13 @@ function sequence(nodes, state, spaces, fn, separator = ',') {
 	if (multiline) {
 		state.multiline = true;
 
-		open.children.push(indent, newline);
-		join.children.push(newline);
-		close.children.push(dedent, newline);
+		open.push(indent, newline);
+		join.push(newline);
+		close.push(dedent, newline);
 	} else {
-		if (spaces) open.children.push(' ');
-		join.children.push(' ');
-		if (spaces) close.children.push(' ');
+		if (spaces) open.push(' ');
+		join.push(' ');
+		if (spaces) close.push(' ');
 	}
 }
 
@@ -710,11 +724,11 @@ const shared = {
 		}
 
 		if (multiline) {
-			open.children.push(indent, newline);
-			join.children.push(',', newline);
-			close.children.push(dedent, newline);
+			open.push(indent, newline);
+			join.push(',', newline);
+			close.push(dedent, newline);
 		} else {
-			join.children.push(', ');
+			join.push(', ');
 		}
 	},
 
@@ -906,12 +920,12 @@ const handlers = {
 		const multiline = child_state.multiline;
 
 		if (multiline) {
-			if_true.children.push(indent, newline, '? ');
-			if_false.children.push(newline, ': ');
+			if_true.push(indent, newline, '? ');
+			if_false.push(newline, ': ');
 			state.commands.push(dedent);
 		} else {
-			if_true.children.push(' ? ');
-			if_false.children.push(' : ');
+			if_true.push(' ? ');
+			if_false.push(' : ');
 		}
 	},
 

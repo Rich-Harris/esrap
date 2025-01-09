@@ -79,30 +79,21 @@ export function print(node, opts = {}) {
 			return;
 		}
 
+		if (Array.isArray(command)) {
+			for (let i = 0; i < command.length; i += 1) {
+				run(command[i]);
+			}
+			return;
+		}
+
 		switch (command.type) {
-			case 'Chunk':
-				const loc = command.loc;
-
-				if (loc) {
-					current_line.push([
-						current_column,
-						0, // source index is always zero
-						loc.start.line - 1,
-						loc.start.column
-					]);
-				}
-
-				append(command.content);
-
-				if (loc) {
-					current_line.push([
-						current_column,
-						0, // source index is always zero
-						loc.end.line - 1,
-						loc.end.column
-					]);
-				}
-
+			case 'Location':
+				current_line.push([
+					current_column,
+					0, // source index is always zero
+					command.line - 1,
+					command.column
+				]);
 				break;
 
 			case 'Newline':
@@ -115,13 +106,6 @@ export function print(node, opts = {}) {
 
 			case 'Dedent':
 				newline = newline.slice(0, -indent.length);
-				break;
-
-			case 'Sequence':
-				for (let i = 0; i < command.children.length; i += 1) {
-					run(command.children[i]);
-				}
-
 				break;
 
 			case 'Comment':
