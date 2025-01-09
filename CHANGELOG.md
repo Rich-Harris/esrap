@@ -1,5 +1,10 @@
 # esrap changelog
 
+## 1.3.3
+
+- Support `export * as` ([#16](https://github.com/Rich-Harris/esrap/pull/16))
+- Support indexed access types ([#18](https://github.com/Rich-Harris/esrap/pull/18))
+
 ## 1.3.2
 
 - Loosen types ([#15](https://github.com/Rich-Harris/esrap/pull/15))
