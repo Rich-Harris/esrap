@@ -7,5 +7,5 @@
   "sourcesContent": [
     "x: for (let i = 0; i < 10; i += 1) {\n\tif (should_break) {\n\t\tbreak;\n\t}\n\n\tif (should_break_with_label) {\n\t\tbreak x;\n\t}\n\n\tif (should_continue) {\n\t\tcontinue;\n\t}\n\n\tif (should_continue_with_label) {\n\t\tcontinue x;\n\t}\n}"
   ],
-  "mappings": "AAAA,CAAC,WAAW,CAAC,GAAG,CAAC,EAAE,CAAC,GAAG,EAAE,EAAE,CAAC,IAAI,CAAC;KAC5B,YAAY;;;;KAIZ,uBAAuB;QACpB,CAAC;;;KAGJ,eAAe;;;;KAIf,0BAA0B;WACpB,CAAC;;"
+  "mappings": "AAAA,CAAC,WAAW,CAAC,GAAG,CAAC,EAAE,CAAC,GAAG,EAAE,EAAE,CAAC,IAAI,CAAC,EAAE,CAAC;KAC/B,YAAY,EAAE,CAAC;;CAEnB,CAAC;;KAEG,uBAAuB,EAAE,CAAC;QACvB,CAAC;CACR,CAAC;;KAEG,eAAe,EAAE,CAAC;;CAEtB,CAAC;;KAEG,0BAA0B,EAAE,CAAC;WACvB,CAAC;CACX,CAAC;AACF,CAAC"
 }

@@ -7,5 +7,5 @@
   "sourcesContent": [
     "function foo(n: number, s: string, a: any): number {\n\treturn 1;\n}\n"
   ],
-  "mappings": "SAAS,GAAG,CAAC,CAAS,UAAE,CAAS,UAAE,CAAM;QACjC,CAAC;"
+  "mappings": "SAAS,GAAG,CAAC,CAAS,UAAE,CAAS,UAAE,CAAM,eAAU,CAAC;QAC5C,CAAC;AACT,CAAC"
 }

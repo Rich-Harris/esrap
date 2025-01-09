@@ -7,5 +7,5 @@
   "sourcesContent": [
     "function foo() {\n\treturn (// hey\n\tabc);\n}\n\nfunction bar() {\n\treturn (/* hey */\n\tabc);\n}"
   ],
-  "mappings": "SAAS,GAAG;;CAEX,GAAG;;;SAGK,GAAG;kBAEX,GAAG;"
+  "mappings": "SAAS,GAAG,GAAG,CAAC;;CAEf,GAAG;AACJ,CAAC;;SAEQ,GAAG,GAAG,CAAC;kBAEf,GAAG;AACJ,CAAC"
 }

@@ -7,5 +7,5 @@
   "sourcesContent": [
     "class Foo {\n\thi;\n\tstatic foo = 1;\n\t[KEY] = 2;\n}"
   ],
-  "mappings": "MAAM,GAAG;CACR,EAAE;QACK,GAAG,GAAG,CAAC;EACb,GAAG,IAAI,CAAC;"
+  "mappings": "MAAM,GAAG,CAAC,CAAC;CACV,EAAE;QACK,GAAG,GAAG,CAAC;EACb,GAAG,IAAI,CAAC;AACV,CAAC"
 }

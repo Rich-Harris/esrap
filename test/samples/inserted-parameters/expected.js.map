@@ -7,5 +7,5 @@
   "sourcesContent": [
     "function foo(bar, baz) {\n\treturn bar * baz;\n}"
   ],
-  "mappings": "SAAS,GAAG,CAAC,GAAG,EAAE,GAAG;QACb,GAAG,GAAG,GAAG;"
+  "mappings": "SAAS,GAAG,CAAC,GAAG,EAAE,GAAG,EAAE,CAAC;QAChB,GAAG,GAAG,GAAG;AACjB,CAAC"
 }

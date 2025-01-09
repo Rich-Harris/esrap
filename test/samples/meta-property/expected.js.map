@@ -7,5 +7,5 @@
   "sourcesContent": [
     "function foo() {\n\tconsole.log(new.target);\n}"
   ],
-  "mappings": "SAAS,GAAG;CACX,OAAO,CAAC,GAAG,CAAC,GAAG,CAAC,MAAM;"
+  "mappings": "SAAS,GAAG,GAAG,CAAC;CACf,OAAO,CAAC,GAAG,CAAC,GAAG,CAAC,MAAM;AACvB,CAAC"
 }
