@@ -69,10 +69,9 @@ export function handle(node, state) {
 /**
  * @param {string} content
  * @param {TSESTree.Node} node
- * @param {boolean} quote
  * @returns {Chunk}
  */
-function c(content, node, quote = false) {
+function c(content, node) {
 	return {
 		type: 'Chunk',
 		content,
