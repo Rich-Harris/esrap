@@ -4,7 +4,7 @@
   "description": "Parse in reverse",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sveltejs/esrap"
+    "url": "git+https://github.com/sveltejs/esrap.git"
   },
   "type": "module",
   "files": [
