@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.3.5
+
+### Patch Changes
+
+- a6c0031: chore: verify changesets setup
+
 ## 1.3.4
 
 - Transfer repo to `sveltejs`
