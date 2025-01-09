@@ -71,8 +71,6 @@ export function print(node, opts = {}) {
 
 	let newline = '\n';
 	const indent = opts.indent ?? '\t';
-	const quote_type = opts.quote ?? 'single';
-	const quote = quote_type === 'single' ? "'" : '"';
 
 	/** @param {Command} command */
 	function run(command) {
