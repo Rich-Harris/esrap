@@ -33,7 +33,7 @@ test('default quote type is single', () => {
 test('single quotes used when single quote type provided', () => {
 	const ast = load(test_code);
 	clean(ast);
-	const code = print(ast, { quote: 'single' }).code;
+	const code = print(ast, { quotes: 'single' }).code;
 
 	expect(code).toMatchInlineSnapshot(`"const foo = 'bar';"`);
 });
@@ -41,7 +41,7 @@ test('single quotes used when single quote type provided', () => {
 test('double quotes used when double quote type provided', () => {
 	const ast = load(test_code);
 	clean(ast);
-	const code = print(ast, { quote: 'double' }).code;
+	const code = print(ast, { quotes: 'double' }).code;
 
 	expect(code).toMatchInlineSnapshot(`"const foo = "bar";"`);
 });
@@ -49,7 +49,7 @@ test('double quotes used when double quote type provided', () => {
 test('escape single quotes if present in string literal', () => {
 	const ast = load('const foo = "b\'ar"');
 	clean(ast);
-	const code = print(ast, { quote: 'single' }).code;
+	const code = print(ast, { quotes: 'single' }).code;
 
 	expect(code).toMatchInlineSnapshot(`"const foo = 'b\\'ar';"`);
 });
@@ -57,7 +57,7 @@ test('escape single quotes if present in string literal', () => {
 test('escape double quotes if present in string literal', () => {
 	const ast = load("const foo = 'b\"ar'");
 	clean(ast);
-	const code = print(ast, { quote: 'double' }).code;
+	const code = print(ast, { quotes: 'double' }).code;
 
 	expect(code).toMatchInlineSnapshot(`"const foo = "b\\"ar";"`);
 });
