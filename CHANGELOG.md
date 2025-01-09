@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.3.7
+
+### Patch Changes
+
+- 4c784f6: fix: move @changesets/cli to dev dependencies
+
 ## 1.3.6
 
 ### Patch Changes
