@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.4.0
+
+### Minor Changes
+
+- d97e56f: feat: add option for quote and indentation styles
+
 ## 1.3.7
 
 ### Patch Changes
