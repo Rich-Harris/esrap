@@ -1,5 +1,5 @@
 /** @import { TSESTree } from '@typescript-eslint/types' */
-/** @import { Chunk, Command, Dedent, Handlers, Indent, Newline, NodeWithComments, State, TypeAnnotationNodes } from './types' */
+/** @import { Command, Dedent, Handlers, Location, Indent, Newline, NodeWithComments, State, TypeAnnotationNodes } from './types' */
 
 /** @type {Newline} */
 const newline = { type: 'Newline' };
@@ -81,7 +81,7 @@ function l(line, column) {
 /**
  * @param {string} content
  * @param {TSESTree.Node} node
- * @returns {Chunk}
+ * @returns {string | Command[]}
  */
 function c(content, node) {
 	return node.loc
