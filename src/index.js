@@ -94,15 +94,7 @@ export function print(node, opts = {}) {
 					]);
 				}
 
-				let content = command.content;
-
-				if (command.quote) {
-					if (content.includes(quote)) content = content.replaceAll(quote, `\\${quote}`);
-
-					content = `${quote}${content}${quote}`;
-				}
-
-				append(content);
+				append(command.content);
 
 				if (loc) {
 					current_line.push([
