@@ -124,13 +124,6 @@ export function print(node, opts = {}) {
 				newline = newline.slice(0, -indent.length);
 				break;
 
-			case 'Sequence':
-				for (let i = 0; i < command.children.length; i += 1) {
-					run(command.children[i]);
-				}
-
-				break;
-
 			case 'Comment':
 				if (command.comment.type === 'Line') {
 					append(`//${command.comment.value}`);
