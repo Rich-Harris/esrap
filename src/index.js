@@ -91,7 +91,7 @@ export function print(node, opts = {}) {
 				current_line.push([
 					current_column,
 					0, // source index is always zero
-					command.line,
+					command.line - 1,
 					command.column
 				]);
 				break;

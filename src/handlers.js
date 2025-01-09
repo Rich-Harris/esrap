@@ -86,9 +86,9 @@ function l(line, column) {
 function c(content, node) {
 	return node.loc
 		? [
-				l(node.loc.start.line - 1, node.loc.start.column),
+				l(node.loc.start.line, node.loc.start.column),
 				content,
-				l(node.loc.end.line - 1, node.loc.end.column)
+				l(node.loc.end.line, node.loc.end.column)
 			]
 		: content;
 }
