@@ -37,7 +37,8 @@ export function print(node, opts = {}) {
 	const state = {
 		commands: [],
 		comments: [],
-		multiline: false
+		multiline: false,
+		quote: opts.quotes === 'double' ? '"' : "'"
 	};
 
 	handle(/** @type {TSESTree.Node} */ (node), state);

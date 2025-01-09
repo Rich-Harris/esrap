@@ -76,7 +76,6 @@ function c(content, node, quote = false) {
 	return {
 		type: 'Chunk',
 		content,
-		quote,
 		loc: node?.loc ?? null
 	};
 }
@@ -96,6 +95,14 @@ function prepend_comments(comments, state, newlines) {
 			state.commands.push(' ');
 		}
 	}
+}
+
+/**
+ * @param {string} string
+ * @param {'\'' | '"'} char
+ */
+function quote(string, char) {
+	return char + string.replaceAll(char, '\\' + char) + char;
 }
 
 const OPERATOR_PRECEDENCE = {
@@ -1133,11 +1140,9 @@ const handlers = {
 			return;
 		}
 
-		const isString = typeof node.value === 'string';
-		const addQuotes = isString;
-		value = isString ? node.value : String(node.value);
+		value = typeof node.value === 'string' ? quote(node.value, state.quote) : String(node.value);
 
-		state.commands.push(c(value, node, addQuotes));
+		state.commands.push(c(value, node));
 	},
 
 	LogicalExpression: shared['BinaryExpression|LogicalExpression'],

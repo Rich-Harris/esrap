@@ -35,12 +35,12 @@ export interface State {
 	commands: Command[];
 	comments: TSESTree.Comment[];
 	multiline: boolean;
+	quote: "'" | '"';
 }
 
 export interface Chunk {
 	type: 'Chunk';
 	content: string;
-	quote: boolean;
 	loc: null | {
 		start: { line: number; column: number };
 		end: { line: number; column: number };
