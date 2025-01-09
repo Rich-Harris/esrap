@@ -30,7 +30,7 @@ function measure(commands, from, to = commands.length) {
 		if (typeof command === 'string') {
 			total += command.length;
 		} else if (Array.isArray(command)) {
-			total += 2; // TODO `measure(command, 0, command.length)`;
+			total += 2;
 		} else if (command.type === 'Chunk') {
 			total += command.content.length;
 		}
