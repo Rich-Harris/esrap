@@ -46,8 +46,12 @@ const { code, map } = print(ast, {
   // Populate the `sourcesContent` field of the resulting sourcemap
   sourceMapContent: fs.readFileSync('input.js', 'utf-8'),
 
+  // Whether to encode the `mappings` field of the resulting sourcemap
+  // as a VLQ string, rather than an unencoded array. Defaults to `true`
+  sourceMapEncodeMappings: false,
+
   // String to use for indentation — defaults to '\t'
-  indent: ' ',
+  indent: '  ',
 
   // Whether to wrap strings in single or double quotes — defaults to 'single'.
   // This only applies to string literals with no `raw` value, which generally
