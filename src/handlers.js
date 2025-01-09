@@ -1,5 +1,5 @@
 /** @import { TSESTree } from '@typescript-eslint/types' */
-/** @import { Chunk, Command, Dedent, Handlers, Indent, Newline, NodeWithComments, Sequence, State, TypeAnnotationNodes } from './types' */
+/** @import { Chunk, Command, Dedent, Handlers, Indent, Newline, NodeWithComments, State, TypeAnnotationNodes } from './types' */
 
 /** @type {Newline} */
 const newline = { type: 'Newline' };
@@ -30,11 +30,10 @@ function measure(commands, from, to = commands.length) {
 		const command = commands[i];
 		if (typeof command === 'string') {
 			total += command.length;
+		} else if (Array.isArray(command)) {
+			total += measure(command, 0, command.length);
 		} else if (command.type === 'Chunk') {
 			total += command.content.length;
-		} else if (command.type === 'Sequence') {
-			// assume this is ', '
-			total += 2;
 		}
 	}
 

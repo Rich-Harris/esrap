@@ -79,6 +79,13 @@ export function print(node, opts = {}) {
 			return;
 		}
 
+		if (Array.isArray(command)) {
+			for (let i = 0; i < command.length; i += 1) {
+				run(command[i]);
+			}
+			return;
+		}
+
 		switch (command.type) {
 			case 'Chunk':
 				const loc = command.loc;

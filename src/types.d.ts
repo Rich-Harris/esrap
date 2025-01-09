@@ -64,17 +64,12 @@ export interface IndentChange {
 	offset: number;
 }
 
-export interface Sequence {
-	type: 'Sequence';
-	children: Command[];
-}
-
 export interface CommentChunk {
 	type: 'Comment';
 	comment: TSESTree.Comment;
 }
 
-export type Command = string | Chunk | Newline | Indent | Dedent | Sequence | CommentChunk;
+export type Command = string | Chunk | Newline | Indent | Dedent | CommentChunk | Command[];
 
 export interface PrintOptions {
 	sourceMapSource?: string;
