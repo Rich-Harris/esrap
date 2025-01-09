@@ -37,7 +37,8 @@ export function print(node, opts = {}) {
 	const state = {
 		commands: [],
 		comments: [],
-		multiline: false
+		multiline: false,
+		quote: opts.quotes === 'double' ? '"' : "'"
 	};
 
 	handle(/** @type {TSESTree.Node} */ (node), state);
@@ -69,6 +70,7 @@ export function print(node, opts = {}) {
 	}
 
 	let newline = '\n';
+	const indent = opts.indent ?? '\t';
 
 	/** @param {Command} command */
 	function run(command) {
@@ -108,11 +110,11 @@ export function print(node, opts = {}) {
 				break;
 
 			case 'Indent':
-				newline += '\t';
+				newline += indent;
 				break;
 
 			case 'Dedent':
-				newline = newline.slice(0, -1);
+				newline = newline.slice(0, -indent.length);
 				break;
 
 			case 'Sequence':

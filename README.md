@@ -35,12 +35,29 @@ If the nodes of the input AST have `loc` properties (e.g. the AST was generated 
 
 ## Options
 
-You can pass information that will be added to the resulting sourcemap (note that the AST is assumed to come from a single file):
+You can pass the following options:
 
 ```js
 const { code, map } = print(ast, {
+  // Populate the `sources` field of the resulting sourcemap
+  // (note that the AST is assumed to come from a single file)
   sourceMapSource: 'input.js',
-  sourceMapContent: fs.readFileSync('input.js', 'utf-8')
+
+  // Populate the `sourcesContent` field of the resulting sourcemap
+  sourceMapContent: fs.readFileSync('input.js', 'utf-8'),
+
+  // Whether to encode the `mappings` field of the resulting sourcemap
+  // as a VLQ string, rather than an unencoded array. Defaults to `true`
+  sourceMapEncodeMappings: false,
+
+  // String to use for indentation — defaults to '\t'
+  indent: '  ',
+
+  // Whether to wrap strings in single or double quotes — defaults to 'single'.
+  // This only applies to string literals with no `raw` value, which generally
+  // means the AST node was generated programmatically, rather than parsed
+  // from an original source
+  quotes: 'single'
 });
 ```
 

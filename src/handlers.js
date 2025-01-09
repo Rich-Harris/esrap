@@ -96,6 +96,14 @@ function prepend_comments(comments, state, newlines) {
 	}
 }
 
+/**
+ * @param {string} string
+ * @param {'\'' | '"'} char
+ */
+function quote(string, char) {
+	return char + string.replaceAll(char, '\\' + char) + char;
+}
+
 const OPERATOR_PRECEDENCE = {
 	'||': 2,
 	'&&': 3,
@@ -1125,9 +1133,9 @@ const handlers = {
 		// TODO do we need to handle weird unicode characters somehow?
 		// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
 
-		let value = node.raw;
-		if (!value)
-			value = typeof node.value === 'string' ? JSON.stringify(node.value) : String(node.value);
+		const value =
+			node.raw ||
+			(typeof node.value === 'string' ? quote(node.value, state.quote) : String(node.value));
 
 		state.commands.push(c(value, node));
 	},

@@ -35,6 +35,7 @@ export interface State {
 	commands: Command[];
 	comments: TSESTree.Comment[];
 	multiline: boolean;
+	quote: "'" | '"';
 }
 
 export interface Chunk {
@@ -79,4 +80,6 @@ export interface PrintOptions {
 	sourceMapSource?: string;
 	sourceMapContent?: string;
 	sourceMapEncodeMappings?: boolean; // default true
+	indent?: string; // default tab
+	quotes?: 'single' | 'double'; // default single
 }
