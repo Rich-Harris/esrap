@@ -1133,13 +1133,9 @@ const handlers = {
 		// TODO do we need to handle weird unicode characters somehow?
 		// str.replace(/\\u(\d{4})/g, (m, n) => String.fromCharCode(+n))
 
-		let value = node.raw;
-		if (value) {
-			state.commands.push(c(value, node));
-			return;
-		}
-
-		value = typeof node.value === 'string' ? quote(node.value, state.quote) : String(node.value);
+		const value =
+			node.raw ||
+			(typeof node.value === 'string' ? quote(node.value, state.quote) : String(node.value));
 
 		state.commands.push(c(value, node));
 	},
