@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "names": [],
+  "sources": [
+    "input.js"
+  ],
+  "sourcesContent": [
+    "type A = { a: string; b: number };\ntype B = A['b'];\n\nconst c: A['b'] = 1;\n"
+  ],
+  "mappings": "KAAK,CAAC,KAAK,CAAC,UAAU,CAAC;KAClB,CAAC,GAAG,CAAC,CAAC,GAAG;;MAER,CAAS,EAAN,CAAC,CAAC,GAAG,IAAI,CAAC"
+}
