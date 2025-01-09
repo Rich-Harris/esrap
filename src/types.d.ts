@@ -81,5 +81,5 @@ export interface PrintOptions {
 	sourceMapContent?: string;
 	sourceMapEncodeMappings?: boolean; // default true
 	indent?: string; // default tab
-	quote?: 'single' | 'double'; // default single
+	quotes?: 'single' | 'double'; // default single
 }
