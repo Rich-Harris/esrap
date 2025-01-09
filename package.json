@@ -19,6 +19,7 @@
   },
   "types": "./types/index.d.ts",
   "devDependencies": {
+    "@changesets/cli": "^2.27.11",
     "@typescript-eslint/types": "^8.2.0",
     "@vitest/ui": "^2.1.1",
     "acorn": "^8.11.3",
@@ -40,7 +41,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@changesets/cli": "^2.27.11",
     "@jridgewell/sourcemap-codec": "^1.4.15"
   },
   "packageManager": "pnpm@9.8.0",
