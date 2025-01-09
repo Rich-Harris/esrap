@@ -43,5 +43,8 @@
     "@changesets/cli": "^2.27.11",
     "@jridgewell/sourcemap-codec": "^1.4.15"
   },
-  "packageManager": "pnpm@9.8.0"
+  "packageManager": "pnpm@9.8.0",
+  "publishConfig": {
+    "access": "public"
+  }
 }
