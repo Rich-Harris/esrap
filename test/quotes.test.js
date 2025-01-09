@@ -61,3 +61,35 @@ test('escape double quotes if present in string literal', () => {
 
 	expect(code).toMatchInlineSnapshot(`"const foo = "b\\"ar";"`);
 });
+
+test('escapes new lines', () => {
+	const ast = load('const str = "a\\nb"');
+	clean(ast);
+	const code = print(ast).code;
+
+	expect(code).toMatchInlineSnapshot(`"const str = 'a\\nb';"`);
+});
+
+test('escapes escape characters', () => {
+	const ast = load('const str = "a\\\\nb"');
+	clean(ast);
+	const code = print(ast).code;
+
+	expect(code).toMatchInlineSnapshot(`"const str = 'a\\\\nb';"`);
+});
+
+test('does not escape already-escaped single quotes', () => {
+	const ast = load(`const str = 'a\\'b'`);
+	clean(ast);
+	const code = print(ast).code;
+
+	expect(code).toMatchInlineSnapshot(`"const str = 'a\\'b';"`);
+});
+
+test('does not escape already-escaped double quotes', () => {
+	const ast = load('const str = "a\\"b"');
+	clean(ast);
+	const code = print(ast).code;
+
+	expect(code).toMatchInlineSnapshot(`"const str = 'a"b';"`);
+});

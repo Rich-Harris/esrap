@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.4.1
+
+### Patch Changes
+
+- 10c6156: fix: escape newlines when quoting strings
+
 ## 1.4.0
 
 ### Minor Changes

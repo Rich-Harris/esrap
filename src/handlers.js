@@ -115,7 +115,26 @@ function prepend_comments(comments, state, newlines) {
  * @param {'\'' | '"'} char
  */
 function quote(string, char) {
-	return char + string.replaceAll(char, '\\' + char) + char;
+	let out = char;
+	let escaped = false;
+
+	for (const c of string) {
+		if (escaped) {
+			out += c;
+			escaped = false;
+		} else if (c === '\\') {
+			out += '\\\\';
+			escaped = true;
+		} else if (c === char) {
+			out += '\\' + c;
+		} else if (c === '\n') {
+			out += '\\n';
+		} else {
+			out += c;
+		}
+	}
+
+	return out + char;
 }
 
 const OPERATOR_PRECEDENCE = {
