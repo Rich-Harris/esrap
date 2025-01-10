@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.4.2
+
+### Patch Changes
+
+- faa865e: fix: including sourcemap mappings for block statement brackets
+
 ## 1.4.1
 
 ### Patch Changes
