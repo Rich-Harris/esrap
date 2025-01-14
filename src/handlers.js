@@ -129,6 +129,8 @@ function quote(string, char) {
 			out += '\\' + c;
 		} else if (c === '\n') {
 			out += '\\n';
+		} else if (c === '\r') {
+			out += '\\r';
 		} else {
 			out += c;
 		}
