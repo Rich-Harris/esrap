@@ -94,7 +94,7 @@ test('does not escape already-escaped double quotes', () => {
 	expect(code).toMatchInlineSnapshot(`"const str = 'a"b';"`);
 });
 
-test.only('correctly handle \\n\\r', () => {
+test('correctly handle \\n\\r', () => {
 	const ast = load('const str = "a\\n\\rb"');
 	clean(ast);
 	const code = print(ast).code;
