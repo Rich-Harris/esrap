@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.4.3
+
+### Patch Changes
+
+- 030c3ec: fix: correctly escape `\r`
+
 ## 1.4.2
 
 ### Patch Changes
