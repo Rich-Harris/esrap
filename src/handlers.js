@@ -1506,6 +1506,22 @@ const handlers = {
 		state.commands.push(dedent, newline, '}', newline);
 	},
 
+	TSModuleBlock(node, state) {
+		state.commands.push(' {', indent, newline);
+		sequence(node.body, state, false, handle);
+		state.commands.push(dedent, newline, '}');
+	},
+
+	TSModuleDeclaration(node, state) {
+		if (node.declare) state.commands.push('declare ');
+		else state.commands.push('namespace ');
+
+		handle(node.id, state);
+
+		if (!node.body) return;
+		handle(node.body, state);
+	},
+
 	TSNonNullExpression(node, state) {
 		handle(node.expression, state);
 		state.commands.push('!');
