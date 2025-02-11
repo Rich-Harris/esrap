@@ -605,6 +605,16 @@ function handle_type_annotation(node, state) {
 			handle_type_annotation(node.indexType, state);
 			state.commands.push(']');
 			break;
+		case 'TSImportType':
+			state.commands.push('import(');
+			handle(node.argument, state);
+			state.commands.push(')');
+
+			if (node.qualifier) {
+				state.commands.push('.');
+				handle(node.qualifier, state);
+			}
+			break;
 		default:
 			throw new Error(`Not implemented type annotation ${node.type}`);
 	}
