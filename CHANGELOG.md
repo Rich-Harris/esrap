@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.4.4
+
+### Patch Changes
+
+- b683171: fix: support `TSModuleDeclaration`
+
 ## 1.4.3
 
 ### Patch Changes
