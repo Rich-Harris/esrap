@@ -1,5 +1,11 @@
 # esrap changelog
 
+## 1.4.5
+
+### Patch Changes
+
+- 6a6eed9: fix: support `TSImportType`
+
 ## 1.4.4
 
 ### Patch Changes
